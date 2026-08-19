@@ -1,0 +1,2595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拾光行事历 · 月历打印工坊</title>
+  <meta name="description" content="月视图行事历：DIY 风格、预设模板、日期范围选择、打印装订成册">
+  <style>
+/* ============================================================
+   拾光行事历 · 月历打印工坊
+   月视图 + DIY 风格 + 打印装订
+   ============================================================ */
+
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --accent: #c98a5e;
+  --accent-contrast: #ffffff;
+  --accent-soft: #f7e8dc;
+  --bg: #f3e9da;
+  --page-bg: #fffdf8;
+  --ink: #5a4632;
+  --sub: #a08a72;
+  --line: rgba(90, 70, 50, 0.16);
+  --cell-bg: #fffdf8;
+  --bar-bg: rgba(255, 253, 248, 0.92);
+  --weekend: #d96a6a;
+  --weekend-soft: rgba(217, 106, 106, 0.08);
+  --radius: 14px;
+  --pattern-image: none;
+  --pattern-size: 0 0;
+  --pattern-color: rgba(201, 138, 94, 0.3);
+  --bg-image: none;
+  --shadow: 0 10px 30px rgba(80, 60, 35, 0.1);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+.hidden { display: none !important; }
+
+/* ============ 顶部栏 ============ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  background: var(--bar-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.brand-mark { font-size: 28px; line-height: 1; }
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.brand-text p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+.month-nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.month-label {
+  min-width: 130px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.top-actions { display: flex; gap: 8px; align-items: center; }
+
+.lang-select {
+  background: var(--cell-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.lang-select:focus { border-color: var(--accent); }
+
+/* ============ 通用按钮 ============ */
+.btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
+}
+
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.btn.danger {
+  background: transparent;
+  color: #e05252;
+  border-color: rgba(224, 82, 82, 0.35);
+}
+
+.btn.mini { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+.btn.full { width: 100%; margin-bottom: 8px; }
+.btn.pill { padding: 5px 12px; border-radius: 999px; font-size: 12px; }
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--page-bg);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.file-label { display: inline-flex; align-items: center; }
+
+/* ============ 布局 ============ */
+.layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  max-width: 1680px;
+  margin: 0 auto;
+  height: calc(100vh - 66px);
+}
+
+.sidebar {
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tabs {
+  position: sticky;
+  top: -12px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px 0 10px;
+  background: linear-gradient(var(--page-bg) 88%, transparent);
+}
+
+.tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--sub);
+  border-radius: 9px;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.panel-block {
+  padding: 13px 2px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.panel-block:last-child { border-bottom: none; }
+
+.panel-block h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--sub);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tip { font-size: 11px; color: var(--sub); line-height: 1.6; margin: 8px 0 0; font-weight: 400; }
+
+/* 表单 */
+.field { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+
+.field > label {
+  font-size: 12px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+.field input[type="text"], .field select, .field textarea,
+.add-cat input[type="text"] {
+  width: 100%;
+  background: var(--cell-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 13px;
+  outline: none;
+}
+
+.field input[type="date"], .field input[type="time"], .field input[type="month"] {
+  background: var(--cell-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus,
+.add-cat input:focus { border-color: var(--accent); }
+
+.field input[type="color"] {
+  width: 44px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cell-bg);
+}
+
+.field input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.row-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* 模板卡片 */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.theme-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--cell-bg);
+  padding: 7px;
+  text-align: left;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.theme-card:hover { transform: translateY(-1px); }
+.theme-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+.theme-swatch {
+  display: block;
+  height: 44px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.theme-name { font-size: 12px; font-weight: 700; display: block; }
+
+.theme-desc { font-size: 10px; color: var(--sub); }
+
+/* 分类图例 */
+.cat-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.cat-item:hover { background: var(--accent-soft); }
+.cat-item.off { opacity: 0.4; }
+
+.cat-item.off .cat-name { text-decoration: line-through; }
+
+.cat-dot { width: 12px; height: 12px; border-radius: 4px; flex: 0 0 auto; }
+
+.cat-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cat-del {
+  border: none;
+  background: transparent;
+  color: var(--sub);
+  font-size: 14px;
+  padding: 0 2px;
+}
+
+.cat-del:hover { color: #e05252; }
+
+.add-cat { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
+.add-cat input[type="color"] { width: 34px; height: 30px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--cell-bg); }
+
+/* 本月日程列表 */
+.month-events { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+
+.ev-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cell-bg);
+  padding: 7px 9px;
+  transition: border-color 0.15s ease;
+}
+
+.ev-row:hover { border-color: var(--accent); }
+
+.ev-dot { width: 10px; height: 26px; border-radius: 5px; flex: 0 0 auto; }
+
+.ev-main { min-width: 0; flex: 1; }
+
+.ev-title { display: block; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ev-meta { display: block; font-size: 11px; color: var(--sub); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.empty-tip { color: var(--sub); font-size: 12px; text-align: center; padding: 14px 0; }
+
+/* 开关 */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.switch input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* ============ 月历主舞台 ============ */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px 8px;
+  overflow: hidden;
+}
+
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--bg-image), var(--pattern-image);
+  background-size: cover, var(--pattern-size);
+  background-position: center, 0 0;
+  background-repeat: no-repeat, repeat;
+}
+
+.cal-week {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  padding: 2px 0 8px;
+}
+
+.wk {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--sub);
+}
+
+.wk.wk-end { color: var(--weekend); }
+
+.cal-grid {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cal-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  background: var(--cell-bg);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 0.7);
+  padding: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.cal-cell:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.cal-cell.outside { opacity: 0.42; }
+
+.cal-cell.is-today {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, var(--accent-soft), var(--cell-bg) 62%);
+}
+
+.cal-cell.is-weekend { background: var(--weekend-soft); }
+.cal-cell.is-today.is-weekend { background: linear-gradient(160deg, var(--accent-soft), var(--weekend-soft)); }
+
+body.no-grid .cal-cell { border-color: transparent; background: transparent; }
+body.no-grid .cal-cell:hover { box-shadow: none; }
+body.no-grid .cal-cell.is-today { border-color: var(--accent); }
+body.no-weekend .cal-cell.is-weekend { background: var(--cell-bg); }
+
+.cell-num {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.is-today .cell-num { background: var(--accent); color: var(--accent-contrast); }
+
+.cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: auto;
+  overflow: hidden;
+}
+
+.chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: filter 0.12s ease;
+}
+
+.chip:hover { filter: brightness(1.08); }
+
+.more {
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.stage-decor {
+  position: absolute;
+  z-index: 2;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.stage-decor.tl { top: 6px; left: 10px; }
+.stage-decor.tr { top: 6px; right: 10px; }
+.stage-decor.bl { bottom: 4px; left: 10px; }
+.stage-decor.br { bottom: 4px; right: 10px; }
+
+.stage-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding-top: 8px;
+  font-size: 11px;
+  color: var(--sub);
+}
+
+/* ============ 弹窗 ============ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(20, 16, 12, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  width: min(560px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+  padding: 18px 20px;
+}
+
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+.modal-head h2 { margin: 0; font-size: 18px; }
+
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+.modal-daylist { border-top: 1px dashed var(--line); margin-top: 16px; padding-top: 12px; }
+
+.modal-daylist h3 { margin: 0 0 8px; font-size: 13px; color: var(--sub); }
+
+.day-list { display: flex; flex-direction: column; gap: 6px; }
+
+.day-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cell-bg);
+  padding: 7px 9px;
+  font-size: 13px;
+}
+
+.day-item:hover { border-color: var(--accent); }
+
+.day-item .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+
+.day-item .tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+.day-item .tm { color: var(--sub); font-size: 11px; }
+
+/* ============ 打印预览 ============ */
+.print-root { display: none; }
+
+body.preview-open .print-root {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+  background: #3f4856;
+  padding: 22px 16px 70px;
+}
+
+.preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: min(760px, 100%);
+  margin: 0 auto 22px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.94);
+  color: #f1f5f9;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.preview-bar .btn.ghost { color: #f1f5f9; border-color: rgba(255, 255, 255, 0.25); }
+
+.pages-wrap { display: flex; flex-direction: column; align-items: center; gap: 26px; }
+
+/* A4 单页 */
+.print-page {
+  position: relative;
+  flex: 0 0 auto;
+  width: 210mm;
+  height: 296mm;
+  min-height: 296mm;
+  margin: 0 auto;
+  background: var(--page-bg);
+  color: var(--ink);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.4);
+  padding: 30mm 13mm 10mm;   /* 顶部 30mm 装订区 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.p-bg {
+  position: absolute;
+  inset: 30mm 0 0 0;   /* 顶部装订区保持干净 */
+  pointer-events: none;
+  background-image: var(--bg-image), var(--pattern-image);
+  background-size: cover, var(--pattern-size);
+  background-position: center, 0 0;
+  background-repeat: no-repeat, repeat;
+}
+
+.cover-page .p-bg { inset: 0; }
+
+.p-guide {
+  position: absolute;
+  top: 19mm;
+  left: 13mm;
+  right: 13mm;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sub);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+.p-guide::before, .p-guide::after {
+  content: "";
+  flex: 1;
+  border-top: 0.4mm dashed var(--line);
+}
+
+.p-hole {
+  position: absolute;
+  top: 10.5mm;
+  width: 6mm;
+  height: 6mm;
+  border-radius: 50%;
+  border: 0.6mm dashed var(--accent);
+  background: transparent;
+}
+
+.p-decor {
+  position: absolute;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.p-decor.tl { top: 15mm; left: 15mm; }
+.p-decor.tr { top: 15mm; right: 15mm; }
+.p-decor.bl { bottom: 13mm; left: 15mm; }
+.p-decor.br { bottom: 13mm; right: 15mm; }
+
+body.decor-off .p-decor, body.decor-off .stage-decor { display: none; }
+
+.p-head { position: relative; text-align: center; margin-bottom: 4mm; }
+
+.p-year { font-size: 11px; letter-spacing: 0.35em; color: var(--sub); margin: 0; }
+
+.p-title { font-size: 34px; font-weight: 800; margin: 2mm 0 1mm; letter-spacing: 4px; }
+
+.p-sub { font-size: 10px; letter-spacing: 0.28em; color: var(--accent); margin: 0; }
+
+.p-week {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 1.5mm;
+}
+
+.p-wk { text-align: center; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: var(--sub); padding: 1.5mm 0; }
+.p-wk.wk-end { color: var(--weekend); }
+
+.p-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  height: 210mm;
+  flex: 0 0 auto;
+  border-top: 0.4mm solid var(--line);
+  border-left: 0.4mm solid var(--line);
+}
+
+.p-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2mm;
+  min-width: 0;
+  min-height: 0;
+  padding: 1.6mm;
+  overflow: hidden;
+  background: var(--cell-bg);
+  border-right: 0.4mm solid var(--line);
+  border-bottom: 0.4mm solid var(--line);
+}
+
+.p-cell.outside { opacity: 0.4; }
+.p-cell.is-weekend { background: var(--weekend-soft); }
+.p-cell.is-today { box-shadow: inset 0 0 0 1.2mm var(--accent); }
+
+.p-num {
+  width: 6.4mm;
+  height: 6.4mm;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.is-today .p-num { background: var(--accent); color: var(--accent-contrast); }
+
+.p-events { display: flex; flex-direction: column; gap: 0.9mm; margin-top: auto; overflow: hidden; }
+
+.p-chip {
+  display: block;
+  border-radius: 1.2mm;
+  padding: 0.6mm 1.4mm;
+  font-size: 7.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p-more { font-size: 7.5px; color: var(--sub); font-weight: 700; }
+
+body.no-grid .p-cell { border-color: transparent; background: transparent; }
+body.no-grid .p-grid { border-color: transparent; }
+body.no-weekend .p-cell.is-weekend { background: var(--cell-bg); }
+
+.p-footer {
+  position: relative;
+  margin-top: auto;
+  padding-top: 2.5mm;
+  display: flex;
+  align-items: flex-end;
+  gap: 8mm;
+  color: var(--sub);
+  font-size: 9px;
+}
+
+.p-notes {
+  flex: 1;
+  height: 9mm;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 1mm 1.5mm;
+  border-bottom: 0.4mm dashed var(--line);
+}
+
+.p-page { flex: 0 0 auto; font-weight: 700; }
+
+/* 封面页 */
+.cover-page { justify-content: center; text-align: center; }
+
+.cover-content { position: relative; }
+
+.cover-kicker { font-size: 12px; letter-spacing: 0.35em; color: var(--sub); margin: 0; }
+
+.cover-title { font-size: 48px; font-weight: 800; letter-spacing: 6px; margin: 12mm 0 7mm; }
+
+.cover-line { width: 42mm; height: 1.2mm; background: var(--accent); margin: 0 auto; border-radius: 1mm; }
+
+.cover-sub { font-size: 11px; letter-spacing: 0.3em; color: var(--sub); margin: 7mm 0 0; }
+
+.cover-months {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3mm;
+  max-width: 150mm;
+  margin: 16mm auto 0;
+}
+
+.cover-month {
+  width: 18mm;
+  padding: 2.6mm 0;
+  border: 0.4mm solid var(--line);
+  border-radius: 2.2mm;
+  font-size: 10px;
+  color: var(--sub);
+  opacity: 0.55;
+}
+
+.cover-month.in-range {
+  opacity: 1;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+  font-weight: 800;
+}
+
+/* 提示气泡 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 200;
+  transform: translate(-50%, 20px);
+  background: rgba(25, 28, 35, 0.92);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============ 响应式 ============ */
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .sidebar { max-height: none; }
+  .tabs { top: -12px; }
+  .stage { height: 78vh; min-height: 560px; }
+  .cal-grid { grid-template-rows: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .brand-text p { display: none; }
+  .month-nav { order: 3; flex-basis: 100%; }
+  .top-actions { margin-left: auto; }
+  .layout { padding: 10px; }
+  .stage { height: auto; min-height: 520px; padding: 8px; }
+  .cal-grid { gap: 4px; }
+  .cal-cell { padding: 5px; border-radius: 8px; }
+  .cell-num { width: 22px; height: 22px; font-size: 12px; }
+  .chip { font-size: 10px; padding: 2px 5px; }
+  .stage-foot { gap: 4px 10px; font-size: 10px; }
+  .form-row { grid-template-columns: 1fr; }
+  .print-page { transform: scale(0.72); transform-origin: top center; margin-bottom: calc(296mm * -0.28); }
+}
+
+@media (max-width: 480px) {
+  body.preview-open .print-root { padding: 12px 6px 40px; }
+  .print-page { transform: scale(0.46); margin-bottom: calc(296mm * -0.54); }
+}
+
+/* ============ 打印规则 ============ */
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  html, body { width: 210mm; background: #ffffff !important; }
+
+  #app, #modal-overlay, #toast { display: none !important; }
+
+  .print-root {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+
+  .preview-bar { display: none !important; }
+  .pages-wrap { display: block; }
+
+  .print-page {
+    width: 210mm;
+    height: 296mm;
+    min-height: 0;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-page:last-child { break-after: auto; page-break-after: auto; }
+
+  .p-guide { display: none !important; }
+  .p-hole { border-style: solid !important; border-color: var(--accent) !important; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+</style>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗓️</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <!-- ============ 顶部工具栏 ============ -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">🗓️</span>
+        <div class="brand-text">
+          <h1 data-i18n="brandName">拾光行事历</h1>
+          <p data-i18n="brandTag">月视图 · DIY 风格 · 打印装订</p>
+        </div>
+      </div>
+
+      <div class="month-nav">
+        <button id="btn-prev" class="icon-btn" title="上个月" data-i18n-title="titlePrevMonth" aria-label="上个月">‹</button>
+        <button id="btn-today" class="btn pill" data-i18n="btnToday">今天</button>
+        <div id="month-label" class="month-label">2025年 8月</div>
+        <button id="btn-next" class="icon-btn" title="下个月" data-i18n-title="titleNextMonth" aria-label="下个月">›</button>
+      </div>
+
+      <div class="top-actions">
+        <select id="lang-select" class="lang-select" aria-label="Language" title="语言 / Language">
+          <option value="zh-CN">简体中文</option>
+          <option value="zh-TW">繁體中文</option>
+          <option value="en">English</option>
+        </select>
+        <button id="btn-preview" class="btn ghost" data-i18n="btnPreview">🖨 打印预览</button>
+        <button id="btn-print" class="btn primary" data-i18n="btnPrint">打印</button>
+      </div>
+    </header>
+
+    <!-- ============ 主体布局 ============ -->
+    <div class="layout">
+      <aside class="sidebar">
+        <nav class="tabs">
+          <button class="tab active" data-tab="schedule" data-i18n="tabSchedule">📋 日程</button>
+          <button class="tab" data-tab="design" data-i18n="tabDesign">🎨 设计</button>
+          <button class="tab" data-tab="print" data-i18n="tabPrint">🖨 打印</button>
+        </nav>
+
+        <!-- 日程面板 -->
+        <section id="tab-schedule" class="tab-panel active">
+          <div class="panel-block">
+            <h3><span data-i18n="catLegend">分类图例</span> <span class="tip" data-i18n="catLegendTip">点击可隐藏 / 显示</span></h3>
+            <div id="cat-legend" class="cat-list"></div>
+            <div class="add-cat">
+              <input id="new-cat-name" type="text" maxlength="8" placeholder="新分类名" data-i18n-ph="newCatPlaceholder">
+              <input id="new-cat-color" type="color" value="#06b6d4" title="分类颜色" data-i18n-title="titleCatColor">
+              <button id="btn-add-cat" class="btn mini" data-i18n="btnAddCat">添加</button>
+            </div>
+          </div>
+
+          <div class="panel-block">
+            <h3 id="month-events-title">本月日程</h3>
+            <div id="month-events" class="month-events"></div>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="dataTitle">数据</h3>
+            <div class="row-btns">
+              <button id="btn-export" class="btn mini ghost" data-i18n="btnExport">导出 JSON</button>
+              <label class="btn mini ghost file-label"><span data-i18n="btnImport">导入</span>
+                <input id="file-import" type="file" accept=".json,application/json" hidden>
+              </label>
+              <button id="btn-clear" class="btn mini danger" data-i18n="btnClear">清空日程</button>
+            </div>
+            <p class="tip" data-i18n="dataTip">日程自动保存在本机浏览器（localStorage），换设备可通过 JSON 迁移。</p>
+          </div>
+        </section>
+
+        <!-- 设计面板 -->
+        <section id="tab-design" class="tab-panel">
+          <div class="panel-block">
+            <h3 data-i18n="themeTitle">预设模板</h3>
+            <div id="theme-grid" class="theme-grid"></div>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="customTitle">自定义风格</h3>
+            <div class="field">
+              <label for="accent-color" data-i18n="labelAccent">主色</label>
+              <input id="accent-color" type="color">
+            </div>
+            <div class="field">
+              <label for="bg-color" data-i18n="labelPage">纸张背景</label>
+              <input id="bg-color" type="color">
+            </div>
+            <div class="field">
+              <label for="pattern-select" data-i18n="labelPattern">背景纹理</label>
+              <select id="pattern-select"></select>
+            </div>
+            <div class="field">
+              <label for="font-select" data-i18n="labelFont">字体</label>
+              <select id="font-select"></select>
+            </div>
+            <div class="field">
+              <label for="radius-range"><span data-i18n="labelRadius">圆角</span> <span id="radius-val">14px</span></label>
+              <input id="radius-range" type="range" min="0" max="24" step="1">
+            </div>
+            <div class="field">
+              <label data-i18n="labelBgImage">自定义背景图</label>
+              <div class="row-btns">
+                <label class="btn mini ghost file-label"><span data-i18n="btnUploadImage">上传图片</span>
+                  <input id="bg-file" type="file" accept="image/*" hidden>
+                </label>
+                <button id="bg-remove" class="btn mini" data-i18n="btnRemove">移除</button>
+              </div>
+              <p class="tip" id="bg-tip">背景图仅作装饰，不会随日程数据导出。</p>
+            </div>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="elementsTitle">元素开关</h3>
+            <label class="switch"><input id="chk-holes" type="checkbox"><span data-i18n="swHoles">打印装订孔标记</span></label>
+            <label class="switch"><input id="chk-decor" type="checkbox"><span data-i18n="swDecor">装饰角标</span></label>
+            <label class="switch"><input id="chk-grid" type="checkbox"><span data-i18n="swGrid">网格线</span></label>
+            <label class="switch"><input id="chk-weekend" type="checkbox"><span data-i18n="swWeekend">周末底纹</span></label>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="weekStartTitle">周起始</h3>
+            <div class="field">
+              <label for="start-week" data-i18n="weekStartLabel">一周从哪一天开始</label>
+              <select id="start-week">
+                <option value="1" data-i18n="optMonday">周一</option>
+                <option value="0" data-i18n="optSunday">周日</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 打印面板 -->
+        <section id="tab-print" class="tab-panel">
+          <div class="panel-block">
+            <h3 data-i18n="printRangeTitle">选择日期范围</h3>
+            <div class="field">
+              <label for="print-start" data-i18n="labelStartMonth">起始月份</label>
+              <input id="print-start" type="month">
+            </div>
+            <div class="field">
+              <label for="print-end" data-i18n="labelEndMonth">结束月份</label>
+              <input id="print-end" type="month">
+            </div>
+            <div class="row-btns">
+              <button id="btn-range-year" class="btn mini ghost" data-i18n="btnRangeYear">本年度</button>
+              <button id="btn-range-next12" class="btn mini ghost" data-i18n="btnRangeNext12">未来 12 个月</button>
+            </div>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="pageOptsTitle">页面选项</h3>
+            <label class="switch"><input id="chk-cover" type="checkbox"><span data-i18n="swCover">首页封面</span></label>
+            <div class="field">
+              <label for="cover-title" data-i18n="labelCoverTitle">封面标题</label>
+              <input id="cover-title" type="text" maxlength="30" placeholder="拾光行事历" data-i18n-ph="coverPlaceholder">
+            </div>
+            <label class="switch"><input id="chk-notes" type="checkbox"><span data-i18n="swNotes">底部备注区</span></label>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="printTitle">打印</h3>
+            <button id="btn-build-preview" class="btn primary full" data-i18n="btnBuildPreview">生成打印预览</button>
+            <button id="btn-print-side" class="btn ghost full" data-i18n="btnPrintDirect">直接打印</button>
+            <p class="tip" data-i18n="printTip">每页顶部自动预留 26mm 装订区，适合打圆孔 / 装订圈合成册。打印页包含全部分类（屏幕上的隐藏不影响打印）。打印时请在浏览器中开启「背景图形」。</p>
+          </div>
+        </section>
+      </aside>
+
+      <!-- 月历主舞台 -->
+      <main class="stage">
+        <div class="stage-bg"></div>
+        <span class="stage-decor tl">✿</span>
+        <span class="stage-decor tr">✿</span>
+        <span class="stage-decor bl">✿</span>
+        <span class="stage-decor br">✿</span>
+        <div class="cal-week" id="week-header"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="stage-foot">
+          <span data-i18n="footAdd">点击日期 → 添加日程</span>
+          <span data-i18n="footEdit">点击色条 → 编辑日程</span>
+          <span data-i18n="footBind">打印页顶部留白 → 打孔装订</span>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ 日程编辑弹窗 ============ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title">添加日程</h2>
+        <button id="btn-modal-close" class="icon-btn" type="button" data-i18n-title="titleClose" aria-label="关闭">×</button>
+      </div>
+
+      <form id="event-form">
+        <input type="hidden" id="ev-id">
+        <div class="field">
+          <label for="ev-title" data-i18n="labelTitle">标题 *</label>
+          <input id="ev-title" type="text" maxlength="40" placeholder="例如：团队周会" data-i18n-ph="titlePlaceholder" required>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="ev-start" data-i18n="labelStartDate">开始日期</label>
+            <input id="ev-start" type="date" required>
+          </div>
+          <div class="field">
+            <label for="ev-end" data-i18n="labelEndDate">结束日期（可选）</label>
+            <input id="ev-end" type="date">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="ev-time" data-i18n="labelTime">时间（可选）</label>
+            <input id="ev-time" type="time">
+          </div>
+          <div class="field">
+            <label for="ev-cat" data-i18n="labelCat">分类</label>
+            <select id="ev-cat"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="ev-note" data-i18n="labelNote">备注</label>
+          <textarea id="ev-note" rows="2" maxlength="200" placeholder="地点、细节……" data-i18n-ph="notePlaceholder"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn primary" data-i18n="btnSave">保存</button>
+          <button type="button" id="btn-ev-delete" class="btn danger hidden" data-i18n="btnDelete">删除</button>
+          <button type="button" id="btn-ev-cancel" class="btn ghost" data-i18n="btnCancel">取消</button>
+        </div>
+      </form>
+
+      <div class="modal-daylist">
+        <h3 id="day-list-title">当日日程</h3>
+        <div id="day-list" class="day-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 打印页渲染区 ============ -->
+  <div id="print-root" class="print-root" aria-hidden="true"></div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+'use strict';
+
+/* ============================================================
+   拾光行事历 · 核心逻辑（简体 / 繁体 / English 三语版）
+   ============================================================ */
+
+/* ---------- 工具函数 ---------- */
+const $ = (sel, el = document) => el.querySelector(sel);
+const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+const pad2 = (n) => String(n).padStart(2, '0');
+const dateKeyOf = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
+const keyOf = (date) => dateKeyOf(date.getFullYear(), date.getMonth(), date.getDate());
+const todayKey = () => keyOf(new Date());
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+function hexToRgb(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return [0, 0, 0];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function mixHex(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  const k = clamp(t, 0, 1);
+  return '#' + A.map((v, i) => pad2(Math.round(v + (B[i] - v) * k).toString(16))).join('');
+}
+
+function luminance(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function rgba(hex, a) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/* ---------- 多语言字典 ---------- */
+const I18N = {
+  'zh-CN': {
+    appTitle: '拾光行事历 · 月历打印工坊',
+    brandName: '拾光行事历',
+    brandTag: '月视图 · DIY 风格 · 打印装订',
+    titlePrevMonth: '上个月', titleNextMonth: '下个月', titleCatColor: '分类颜色', titleClose: '关闭', titleDeleteCat: '删除分类',
+    btnToday: '今天', btnPreview: '🖨 打印预览', btnPrint: '打印',
+    tabSchedule: '📋 日程', tabDesign: '🎨 设计', tabPrint: '🖨 打印',
+    catLegend: '分类图例', catLegendTip: '点击可隐藏 / 显示',
+    newCatPlaceholder: '新分类名', btnAddCat: '添加',
+    monthEventsTitle: '本月日程',
+    dataTitle: '数据', btnExport: '导出 JSON', btnImport: '导入', btnClear: '清空日程',
+    dataTip: '日程自动保存在本机浏览器（localStorage），换设备可通过 JSON 迁移。',
+    themeTitle: '预设模板', customTitle: '自定义风格',
+    labelAccent: '主色', labelPage: '纸张背景', labelPattern: '背景纹理', labelFont: '字体', labelRadius: '圆角',
+    labelBgImage: '自定义背景图', btnUploadImage: '上传图片', btnRemove: '移除',
+    bgTipDefault: '背景图仅作装饰，不会随日程数据导出。',
+    bgTipUsed: '已使用自定义背景图，点击「移除」恢复纯色。',
+    elementsTitle: '元素开关', swHoles: '打印装订孔标记', swDecor: '装饰角标', swGrid: '网格线', swWeekend: '周末底纹',
+    weekStartTitle: '周起始', weekStartLabel: '一周从哪一天开始', optMonday: '周一', optSunday: '周日',
+    printRangeTitle: '选择日期范围', labelStartMonth: '起始月份', labelEndMonth: '结束月份',
+    btnRangeYear: '本年度', btnRangeNext12: '未来 12 个月',
+    pageOptsTitle: '页面选项', swCover: '首页封面', labelCoverTitle: '封面标题', coverPlaceholder: '拾光行事历', swNotes: '底部备注区',
+    printTitle: '打印', btnBuildPreview: '生成打印预览', btnPrintDirect: '直接打印',
+    printTip: '每页顶部自动预留 26mm 装订区，适合打圆孔 / 装订圈合成册。打印页包含全部分类（屏幕上的隐藏不影响打印）。打印时请在浏览器中开启「背景图形」。',
+    footAdd: '点击日期 → 添加日程', footEdit: '点击色条 → 编辑日程', footBind: '打印页顶部留白 → 打孔装订',
+    modalAdd: '添加日程', modalEdit: '编辑日程',
+    labelTitle: '标题 *', titlePlaceholder: '例如：团队周会',
+    labelStartDate: '开始日期', labelEndDate: '结束日期（可选）', labelTime: '时间（可选）',
+    labelCat: '分类', labelNote: '备注', notePlaceholder: '地点、细节……',
+    btnSave: '保存', btnDelete: '删除', btnCancel: '取消', fullDay: '全天',
+    emptyMonth: '本月暂无日程<br>点击日历上的日期添加一条吧 ✍️',
+    emptyDay: '这一天还没有日程',
+    moreLabel: '+{n} 更多',
+    monthLabelFmt: '{y}年 {m}月',
+    monthEventsTitleFmt: '{y}年 {m}月日程 · {n} 项',
+    dayListTitleFmt: '{y}年{m}月{d}日 当日日程 · {n} 项',
+    pYearFmt: '{y} 年 · {month}',
+    pTitleNum: '{m} 月',
+    pSubFmt: '{monthEn} {y} · {month}',
+    coverSub: 'MONTHLY PLANNER · 月历打印手帐',
+    coverMonthFmt: '{m}月',
+    bindingGuide: '装订区 · 顶部留白 26mm',
+    notes: '备注',
+    previewBar: '打印预览 · 共 {n} 页 · 日期范围 {m} 个月',
+    btnPrintPreview: '🖨 打印', btnClose: '关闭',
+    unnamedEvent: '未命名',
+    toastSaveFail: '保存失败：浏览器存储空间不足（背景图可能过大）',
+    toastTitleRequired: '请填写日程标题',
+    toastDateRequired: '请选择开始日期',
+    toastEndBeforeStart: '结束日期不能早于开始日期',
+    toastSaved: '日程已保存',
+    toastDeleted: '日程已删除',
+    toastExported: '数据已导出',
+    toastImported: '已导入 {n} 条日程',
+    toastImportFail: '导入失败：文件格式不正确',
+    toastThemeApplied: '已应用「{name}」模板',
+    toastCatName: '请输入分类名',
+    toastCatAdded: '已添加分类「{name}」',
+    toastCleared: '已清空全部日程',
+    toastBgApplied: '背景图已应用',
+    toastBgRemoved: '已移除背景图',
+    toastRangeYear: '已选择 {y} 全年',
+    toastRangeNext12: '已选择未来 12 个月',
+    confirmDeleteEvent: '确定删除这条日程吗？',
+    confirmDeleteCat: '删除该分类？原日程会归入「其他」。',
+    confirmClear: '确定清空全部日程吗？此操作不可恢复。',
+    exportFileBase: '拾光行事历-数据',
+    sample1Title: '团队周会', sample1Note: '会议室 B',
+    sample2Title: '妈妈生日', sample2Note: '准备蛋糕和花',
+    sample3Title: '年度体检', sample3Note: '记得空腹',
+    sample4Title: '读书打卡', sample4Note: '《小王子》'
+  },
+
+  'zh-TW': {
+    appTitle: '拾光行事曆 · 月曆列印工坊',
+    brandName: '拾光行事曆',
+    brandTag: '月檢視 · DIY 風格 · 列印裝訂',
+    titlePrevMonth: '上個月', titleNextMonth: '下個月', titleCatColor: '分類顏色', titleClose: '關閉', titleDeleteCat: '刪除分類',
+    btnToday: '今天', btnPreview: '🖨 列印預覽', btnPrint: '列印',
+    tabSchedule: '📋 行程', tabDesign: '🎨 設計', tabPrint: '🖨 列印',
+    catLegend: '分類圖例', catLegendTip: '點擊可隱藏 / 顯示',
+    newCatPlaceholder: '新分類名', btnAddCat: '新增',
+    monthEventsTitle: '本月行程',
+    dataTitle: '資料', btnExport: '匯出 JSON', btnImport: '匯入', btnClear: '清空行程',
+    dataTip: '行程自動儲存在本機瀏覽器（localStorage），更換裝置可透過 JSON 移轉。',
+    themeTitle: '預設範本', customTitle: '自訂風格',
+    labelAccent: '主色', labelPage: '紙張背景', labelPattern: '背景紋理', labelFont: '字型', labelRadius: '圓角',
+    labelBgImage: '自訂背景圖', btnUploadImage: '上傳圖片', btnRemove: '移除',
+    bgTipDefault: '背景圖僅作裝飾，不會隨行程資料匯出。',
+    bgTipUsed: '已使用自訂背景圖，點擊「移除」恢復純色。',
+    elementsTitle: '元素開關', swHoles: '列印裝訂孔標記', swDecor: '裝飾角標', swGrid: '網格線', swWeekend: '週末底紋',
+    weekStartTitle: '週起始', weekStartLabel: '一週從哪一天開始', optMonday: '週一', optSunday: '週日',
+    printRangeTitle: '選擇日期範圍', labelStartMonth: '起始月份', labelEndMonth: '結束月份',
+    btnRangeYear: '本年度', btnRangeNext12: '未來 12 個月',
+    pageOptsTitle: '頁面選項', swCover: '首頁封面', labelCoverTitle: '封面標題', coverPlaceholder: '拾光行事曆', swNotes: '底部備註區',
+    printTitle: '列印', btnBuildPreview: '產生列印預覽', btnPrintDirect: '直接列印',
+    printTip: '每頁頂部自動預留 26mm 裝訂區，適合打圓孔 / 裝訂圈合成冊。列印頁包含全部分類（螢幕上的隱藏不影響列印）。列印時請在瀏覽器中開啟「背景圖形」。',
+    footAdd: '點擊日期 → 新增行程', footEdit: '點擊色條 → 編輯行程', footBind: '列印頁頂部留白 → 打孔裝訂',
+    modalAdd: '新增行程', modalEdit: '編輯行程',
+    labelTitle: '標題 *', titlePlaceholder: '例如：團隊週會',
+    labelStartDate: '開始日期', labelEndDate: '結束日期（可選）', labelTime: '時間（可選）',
+    labelCat: '分類', labelNote: '備註', notePlaceholder: '地點、細節……',
+    btnSave: '儲存', btnDelete: '刪除', btnCancel: '取消', fullDay: '全天',
+    emptyMonth: '本月暫無行程<br>點擊日曆上的日期新增一筆吧 ✍️',
+    emptyDay: '這一天還沒有行程',
+    moreLabel: '+{n} 更多',
+    monthLabelFmt: '{y} 年 {m} 月',
+    monthEventsTitleFmt: '{y} 年 {m} 月行程 · {n} 項',
+    dayListTitleFmt: '{y}年{m}月{d}日 當日行程 · {n} 項',
+    pYearFmt: '{y} 年 · {month}',
+    pTitleNum: '{m} 月',
+    pSubFmt: '{monthEn} {y} · {month}',
+    coverSub: 'MONTHLY PLANNER · 月曆列印手帳',
+    coverMonthFmt: '{m}月',
+    bindingGuide: '裝訂區 · 頂部留白 26mm',
+    notes: '備註',
+    previewBar: '列印預覽 · 共 {n} 頁 · 日期範圍 {m} 個月',
+    btnPrintPreview: '🖨 列印', btnClose: '關閉',
+    unnamedEvent: '未命名',
+    toastSaveFail: '儲存失敗：瀏覽器儲存空間不足（背景圖可能過大）',
+    toastTitleRequired: '請填寫行程標題',
+    toastDateRequired: '請選擇開始日期',
+    toastEndBeforeStart: '結束日期不能早於開始日期',
+    toastSaved: '行程已儲存',
+    toastDeleted: '行程已刪除',
+    toastExported: '資料已匯出',
+    toastImported: '已匯入 {n} 筆行程',
+    toastImportFail: '匯入失敗：檔案格式不正確',
+    toastThemeApplied: '已套用「{name}」範本',
+    toastCatName: '請輸入分類名稱',
+    toastCatAdded: '已新增分類「{name}」',
+    toastCleared: '已清空全部行程',
+    toastBgApplied: '背景圖已套用',
+    toastBgRemoved: '已移除背景圖',
+    toastRangeYear: '已選擇 {y} 全年',
+    toastRangeNext12: '已選擇未來 12 個月',
+    confirmDeleteEvent: '確定刪除這筆行程嗎？',
+    confirmDeleteCat: '刪除該分類？原行程會歸入「其他」。',
+    confirmClear: '確定清空全部行程嗎？此操作無法復原。',
+    exportFileBase: '拾光行事曆-資料',
+    sample1Title: '團隊週會', sample1Note: '會議室 B',
+    sample2Title: '媽媽生日', sample2Note: '準備蛋糕和花',
+    sample3Title: '年度體檢', sample3Note: '記得空腹',
+    sample4Title: '讀書打卡', sample4Note: '《小王子》'
+  },
+
+  en: {
+    appTitle: 'Calendar Studio · Monthly Print',
+    brandName: 'Calendar Studio',
+    brandTag: 'Month view · DIY themes · Print & bind',
+    titlePrevMonth: 'Previous month', titleNextMonth: 'Next month', titleCatColor: 'Category color', titleClose: 'Close', titleDeleteCat: 'Delete category',
+    btnToday: 'Today', btnPreview: '🖨 Print preview', btnPrint: 'Print',
+    tabSchedule: '📋 Events', tabDesign: '🎨 Design', tabPrint: '🖨 Print',
+    catLegend: 'Category legend', catLegendTip: 'Click to hide / show',
+    newCatPlaceholder: 'New category', btnAddCat: 'Add',
+    monthEventsTitle: 'Month events',
+    dataTitle: 'Data', btnExport: 'Export JSON', btnImport: 'Import', btnClear: 'Clear events',
+    dataTip: 'Events are stored locally in your browser (localStorage). Use JSON to move between devices.',
+    themeTitle: 'Preset templates', customTitle: 'Custom style',
+    labelAccent: 'Accent', labelPage: 'Paper background', labelPattern: 'Background pattern', labelFont: 'Font', labelRadius: 'Corner radius',
+    labelBgImage: 'Custom background image', btnUploadImage: 'Upload image', btnRemove: 'Remove',
+    bgTipDefault: 'Background image is decorative only and is not exported with your data.',
+    bgTipUsed: 'Custom background in use — click Remove to restore a plain color.',
+    elementsTitle: 'Elements', swHoles: 'Punch-hole marks on print', swDecor: 'Corner decorations', swGrid: 'Grid lines', swWeekend: 'Weekend shading',
+    weekStartTitle: 'Week start', weekStartLabel: 'Week starts on', optMonday: 'Monday', optSunday: 'Sunday',
+    printRangeTitle: 'Select date range', labelStartMonth: 'Start month', labelEndMonth: 'End month',
+    btnRangeYear: 'This year', btnRangeNext12: 'Next 12 months',
+    pageOptsTitle: 'Page options', swCover: 'Cover page', labelCoverTitle: 'Cover title', coverPlaceholder: 'My Calendar', swNotes: 'Notes area at bottom',
+    printTitle: 'Print', btnBuildPreview: 'Generate print preview', btnPrintDirect: 'Print directly',
+    printTip: 'Each page reserves a 26mm top binding area for ring/hole binding. Printed pages include all categories (hiding a category on screen does not affect printing). Enable "Background graphics" in the browser print dialog.',
+    footAdd: 'Click a date → add event', footEdit: 'Click a chip → edit event', footBind: 'Top margin on print pages → punch & bind',
+    modalAdd: 'Add event', modalEdit: 'Edit event',
+    labelTitle: 'Title *', titlePlaceholder: 'e.g. Weekly team meeting',
+    labelStartDate: 'Start date', labelEndDate: 'End date (optional)', labelTime: 'Time (optional)',
+    labelCat: 'Category', labelNote: 'Note', notePlaceholder: 'Place, details…',
+    btnSave: 'Save', btnDelete: 'Delete', btnCancel: 'Cancel', fullDay: 'All day',
+    emptyMonth: 'No events this month<br>Click a date on the calendar to add one ✍️',
+    emptyDay: 'No events on this day',
+    moreLabel: '+{n} more',
+    monthLabelFmt: '{month} {y}',
+    monthEventsTitleFmt: '{month} {y} · {n} events',
+    dayListTitleFmt: '{month} {d}, {y} · {n} events',
+    pYearFmt: '{y} · {month}',
+    pTitleNum: '{month}',
+    pSubFmt: '{month} {y} · Monthly',
+    coverSub: 'MONTHLY PLANNER · PRINT & BIND',
+    coverMonthFmt: '{monthShort}',
+    bindingGuide: 'BINDING AREA · 26mm TOP MARGIN',
+    notes: 'NOTES',
+    previewBar: 'Print preview · {n} pages · {m} months',
+    btnPrintPreview: '🖨 Print', btnClose: 'Close',
+    unnamedEvent: 'Untitled',
+    toastSaveFail: 'Save failed: browser storage is full (the background image may be too large).',
+    toastTitleRequired: 'Please enter an event title.',
+    toastDateRequired: 'Please choose a start date.',
+    toastEndBeforeStart: 'End date cannot be earlier than start date.',
+    toastSaved: 'Event saved.',
+    toastDeleted: 'Event deleted.',
+    toastExported: 'Data exported.',
+    toastImported: 'Imported {n} events.',
+    toastImportFail: 'Import failed: invalid file format.',
+    toastThemeApplied: 'Applied "{name}" template.',
+    toastCatName: 'Please enter a category name.',
+    toastCatAdded: 'Added category "{name}".',
+    toastCleared: 'All events cleared.',
+    toastBgApplied: 'Background image applied.',
+    toastBgRemoved: 'Background image removed.',
+    toastRangeYear: 'Selected the whole year {y}.',
+    toastRangeNext12: 'Selected the next 12 months.',
+    confirmDeleteEvent: 'Delete this event?',
+    confirmDeleteCat: 'Delete this category? Existing events will move to "Other".',
+    confirmClear: 'Clear all events? This cannot be undone.',
+    exportFileBase: 'calendar-data',
+    sample1Title: 'Weekly team meeting', sample1Note: 'Meeting room B',
+    sample2Title: "Mom's birthday", sample2Note: 'Prepare a cake and flowers',
+    sample3Title: 'Annual check-up', sample3Note: 'Remember to fast',
+    sample4Title: 'Reading time', sample4Note: 'The Little Prince'
+  }
+};
+
+/* ---------- 本地化名称 ---------- */
+const MONTHS_LOC = {
+  'zh-CN': ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+  'zh-TW': ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+};
+
+const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+const WEEK_SHORT_LOC = {
+  'zh-CN': ['日', '一', '二', '三', '四', '五', '六'],
+  'zh-TW': ['日', '一', '二', '三', '四', '五', '六'],
+  en: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+};
+
+const WEEK_FULL_LOC = {
+  'zh-CN': ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+  'zh-TW': ['週日', '週一', '週二', '週三', '週四', '週五', '週六'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+};
+
+/* ---------- 预设字体 / 纹理 ---------- */
+const FONTS = [
+  { name: { 'zh-CN': '系统黑体', 'zh-TW': '系統黑體', en: 'System Sans' }, css: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif' },
+  { name: { 'zh-CN': '宋体衬线', 'zh-TW': '宋體襯線', en: 'Serif' }, css: 'Georgia, "Times New Roman", "Songti SC", SimSun, serif' },
+  { name: { 'zh-CN': '楷体手帐', 'zh-TW': '楷體手帳', en: 'Kaiti Script' }, css: '"Kaiti SC", "STKaiti", "KaiTi", "TW-Kai", "AR PL UKai CN", serif' },
+  { name: { 'zh-CN': '圆体可爱', 'zh-TW': '圓體可愛', en: 'Rounded' }, css: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Comic Sans MS", "Chalkboard SE", sans-serif' },
+  { name: { 'zh-CN': '细黑极简', 'zh-TW': '細黑極簡', en: 'Thin Sans' }, css: '"Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", sans-serif' }
+];
+
+const PATTERNS = [
+  { id: 'none', name: { 'zh-CN': '无纹理', 'zh-TW': '無紋理', en: 'None' }, css: 'none', size: '0 0' },
+  { id: 'dots', name: { 'zh-CN': '波点', 'zh-TW': '波點', en: 'Dots' }, css: 'radial-gradient(circle, var(--pattern-color) 1.2px, transparent 1.7px)', size: '18px 18px' },
+  { id: 'grid', name: { 'zh-CN': '方格', 'zh-TW': '方格', en: 'Grid' }, css: 'linear-gradient(var(--pattern-color) 1px, transparent 1px), linear-gradient(90deg, var(--pattern-color) 1px, transparent 1px)', size: '22px 22px' },
+  { id: 'lines', name: { 'zh-CN': '横线', 'zh-TW': '橫線', en: 'Lines' }, css: 'repeating-linear-gradient(transparent, transparent 5px, var(--pattern-color) 5px, var(--pattern-color) 6px)', size: '100% 6px' },
+  { id: 'diag', name: { 'zh-CN': '斜纹', 'zh-TW': '斜紋', en: 'Diagonal' }, css: 'repeating-linear-gradient(45deg, var(--pattern-color) 0 1px, transparent 1px 9px)', size: 'auto' },
+  { id: 'stars', name: { 'zh-CN': '星点', 'zh-TW': '星點', en: 'Star dots' }, css: 'radial-gradient(circle, var(--pattern-color) 1px, transparent 1.4px) 0 0/26px 26px, radial-gradient(circle, var(--pattern-color) 1px, transparent 1.4px) 13px 13px/26px 26px', size: 'auto' }
+];
+
+/* ---------- 预设模板 ---------- */
+const THEMES = {
+  cream: {
+    name: { 'zh-CN': '奶油手账', 'zh-TW': '奶油手帳', en: 'Cream Journal' },
+    desc: { 'zh-CN': '温暖奶油 · 手帐风', 'zh-TW': '溫暖奶油 · 手帳風', en: 'Warm cream · journal style' },
+    swatch: 'linear-gradient(135deg, #f7e8dc 0%, #e6c39a 55%, #c98a5e 100%)',
+    accent: '#c98a5e', backdrop: '#f3e9da', page: '#fffdf8',
+    inkDark: '#5a4632', inkLight: '#f4ede2', weekend: '#d96a6a',
+    pattern: 'dots', font: FONTS[2].css, radius: 14, decor: '✿'
+  },
+  matcha: {
+    name: { 'zh-CN': '抹茶清新', 'zh-TW': '抹茶清新', en: 'Matcha Fresh' },
+    desc: { 'zh-CN': '低饱和绿 · 清爽', 'zh-TW': '低飽和綠 · 清爽', en: 'Muted green · fresh' },
+    swatch: 'linear-gradient(135deg, #e8f1e2 0%, #a9c6a2 55%, #5f8f6b 100%)',
+    accent: '#5f8f6b', backdrop: '#eaf1e6', page: '#fbfdf8',
+    inkDark: '#3d4a3d', inkLight: '#eef5ea', weekend: '#c96f5a',
+    pattern: 'grid', font: FONTS[0].css, radius: 12, decor: '❋'
+  },
+  morandi: {
+    name: { 'zh-CN': '莫兰迪', 'zh-TW': '莫蘭迪', en: 'Morandi' },
+    desc: { 'zh-CN': '灰调 · 安静高级', 'zh-TW': '灰調 · 安靜高級', en: 'Muted grey · quiet' },
+    swatch: 'linear-gradient(135deg, #e8e9ec 0%, #b9c0cc 55%, #8d99ae 100%)',
+    accent: '#8d99ae', backdrop: '#e8e9ec', page: '#f6f7f8',
+    inkDark: '#4a5560', inkLight: '#eef1f5', weekend: '#b5817f',
+    pattern: 'none', font: FONTS[0].css, radius: 8, decor: '◆'
+  },
+  kraft: {
+    name: { 'zh-CN': '复古牛皮纸', 'zh-TW': '復古牛皮紙', en: 'Vintage Kraft' },
+    desc: { 'zh-CN': '做旧纸张 · 复古', 'zh-TW': '做舊紙張 · 復古', en: 'Aged paper · vintage' },
+    swatch: 'linear-gradient(135deg, #f0e4c8 0%, #d8bd90 55%, #b5733f 100%)',
+    accent: '#b5733f', backdrop: '#d9c9a8', page: '#f3e9d2',
+    inkDark: '#5a4632', inkLight: '#f2e7cf', weekend: '#c05f4f',
+    pattern: 'lines', font: FONTS[2].css, radius: 6, decor: '❦'
+  },
+  sakura: {
+    name: { 'zh-CN': '樱花粉', 'zh-TW': '櫻花粉', en: 'Sakura Pink' },
+    desc: { 'zh-CN': '粉嫩 · 温柔浪漫', 'zh-TW': '粉嫩 · 溫柔浪漫', en: 'Soft pink · romantic' },
+    swatch: 'linear-gradient(135deg, #fdeaf0 0%, #f3bccb 55%, #e58aa5 100%)',
+    accent: '#e58aa5', backdrop: '#f9e7ec', page: '#fffafc',
+    inkDark: '#6b4a56', inkLight: '#fdeef2', weekend: '#e07a8a',
+    pattern: 'dots', font: FONTS[3].css, radius: 16, decor: '✿'
+  },
+  midnight: {
+    name: { 'zh-CN': '午夜蓝', 'zh-TW': '午夜藍', en: 'Midnight Blue' },
+    desc: { 'zh-CN': '深色夜空 · 星点', 'zh-TW': '深色夜空 · 星點', en: 'Dark night · star specks' },
+    swatch: 'linear-gradient(135deg, #202a3d 0%, #33415f 55%, #7aa2ff 100%)',
+    accent: '#7aa2ff', backdrop: '#151c2b', page: '#202a3d',
+    inkDark: '#2a3550', inkLight: '#e8ecf5', weekend: '#ff9c9c',
+    pattern: 'stars', font: FONTS[0].css, radius: 12, decor: '✦'
+  },
+  minimal: {
+    name: { 'zh-CN': '极简白', 'zh-TW': '極簡白', en: 'Minimal White' },
+    desc: { 'zh-CN': '黑白 · 干净利落', 'zh-TW': '黑白 · 乾淨俐落', en: 'Black & white · clean' },
+    swatch: 'linear-gradient(135deg, #ffffff 0%, #d7d9dc 55%, #111827 100%)',
+    accent: '#111827', backdrop: '#f0f0ec', page: '#ffffff',
+    inkDark: '#1f2937', inkLight: '#f5f5f4', weekend: '#dc2626',
+    pattern: 'none', font: FONTS[4].css, radius: 4, decor: '·'
+  },
+  ocean: {
+    name: { 'zh-CN': '海盐蓝', 'zh-TW': '海鹽藍', en: 'Sea Salt Blue' },
+    desc: { 'zh-CN': '清透蓝 · 海风', 'zh-TW': '清透藍 · 海風', en: 'Clear blue · sea breeze' },
+    swatch: 'linear-gradient(135deg, #e3f1f8 0%, #a9d2ea 55%, #3d9bd9 100%)',
+    accent: '#3d9bd9', backdrop: '#e3f1f8', page: '#fbfeff',
+    inkDark: '#2f4b5f', inkLight: '#eaf5fb', weekend: '#d97757',
+    pattern: 'diag', font: FONTS[3].css, radius: 10, decor: '❂'
+  }
+};
+
+const DEFAULT_CATS = [
+  { id: 'work', name: { 'zh-CN': '工作', 'zh-TW': '工作', en: 'Work' }, color: '#3b82f6', custom: false },
+  { id: 'life', name: { 'zh-CN': '生活', 'zh-TW': '生活', en: 'Life' }, color: '#10b981', custom: false },
+  { id: 'important', name: { 'zh-CN': '重要', 'zh-TW': '重要', en: 'Important' }, color: '#ef4444', custom: false },
+  { id: 'anniv', name: { 'zh-CN': '纪念日', 'zh-TW': '紀念日', en: 'Anniversary' }, color: '#ec4899', custom: false },
+  { id: 'study', name: { 'zh-CN': '学习', 'zh-TW': '學習', en: 'Study' }, color: '#f59e0b', custom: false },
+  { id: 'other', name: { 'zh-CN': '其他', 'zh-TW': '其他', en: 'Other' }, color: '#8b5cf6', custom: false }
+];
+
+const LS_SETTINGS = 'printly-calendar-settings-v1';
+const LS_EVENTS = 'printly-calendar-events-v1';
+
+/* ---------- 语言辅助 ---------- */
+function detectLang() {
+  try {
+    const n = String(navigator.language || 'zh-CN').toLowerCase();
+    if (n.startsWith('zh')) {
+      if (/tw|hk|mo|hant/.test(n)) return 'zh-TW';
+      return 'zh-CN';
+    }
+    if (n.startsWith('en')) return 'en';
+  } catch (err) { /* ignore */ }
+  return 'zh-CN';
+}
+
+function currentLang() {
+  const l = state.settings && state.settings.lang;
+  return I18N[l] ? l : 'zh-CN';
+}
+
+function t(key, params) {
+  const dict = I18N[currentLang()] || I18N['zh-CN'];
+  let s = dict[key];
+  if (s === undefined) s = I18N['zh-CN'][key];
+  if (s === undefined) return key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v));
+  }
+  return s;
+}
+
+const monthName = (m) => MONTHS_LOC[currentLang()][m];
+const weekShort = (d) => WEEK_SHORT_LOC[currentLang()][d];
+const weekFull = (d) => WEEK_FULL_LOC[currentLang()][d];
+
+function themeName(id) {
+  const th = THEMES[id];
+  if (!th) return id;
+  return th.name[currentLang()] || th.name['zh-CN'];
+}
+
+function themeDesc(id) {
+  const th = THEMES[id];
+  if (!th) return '';
+  return th.desc[currentLang()] || th.desc['zh-CN'];
+}
+
+function patternName(p) {
+  return (p.name[currentLang()] || p.name['zh-CN']);
+}
+
+function fontName(f) {
+  return (f.name[currentLang()] || f.name['zh-CN']);
+}
+
+function catName(c) {
+  if (!c) return '';
+  if (c.name && typeof c.name === 'object') return c.name[currentLang()] || c.name['zh-CN'] || c.name;
+  return c.name || '';
+}
+
+/* ---------- 默认数据 ---------- */
+function defaultSettings() {
+  const y = new Date().getFullYear();
+  const lang = detectLang();
+  const coverDefaults = { 'zh-CN': '拾光行事历', 'zh-TW': '拾光行事曆', en: 'Calendar Studio' };
+  return {
+    themeId: 'cream',
+    lang,
+    custom: {
+      accent: THEMES.cream.accent,
+      page: THEMES.cream.page,
+      pattern: THEMES.cream.pattern,
+      font: THEMES.cream.font,
+      radius: THEMES.cream.radius,
+      bgImage: ''
+    },
+    startWeek: 1,
+    showHoles: true,
+    showDecor: true,
+    gridLines: true,
+    weekendShade: true,
+    includeCover: true,
+    coverTitle: coverDefaults[lang] || '拾光行事历',
+    showNotes: true,
+    printStart: `${y}-01`,
+    printEnd: `${y}-12`
+  };
+}
+
+function sampleEvents() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const d = (day) => dateKeyOf(y, m, day);
+  const next = new Date(y, m + 1, 1);
+  return [
+    { id: 'sample-1', title: t('sample1Title'), start: d(5), end: '', time: '10:00', category: 'work', note: t('sample1Note') },
+    { id: 'sample-2', title: t('sample2Title'), start: d(12), end: '', time: '', category: 'anniv', note: t('sample2Note') },
+    { id: 'sample-3', title: t('sample3Title'), start: d(16), end: '', time: '08:30', category: 'important', note: t('sample3Note') },
+    { id: 'sample-4', title: t('sample4Title'), start: d(20), end: dateKeyOf(next.getFullYear(), next.getMonth(), 5), time: '', category: 'study', note: t('sample4Note') }
+  ];
+}
+
+/* ---------- 存取 ---------- */
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (err) {
+    return fallback;
+  }
+}
+
+function saveJSON(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    toast(t('toastSaveFail'));
+  }
+}
+
+function mergeSettings(base, saved) {
+  const out = Object.assign({}, base, saved || {});
+  out.custom = Object.assign({}, base.custom, (saved && saved.custom) || {});
+  return out;
+}
+
+/* ---------- 全局状态 ---------- */
+const now = new Date();
+const state = {
+  view: { y: now.getFullYear(), m: now.getMonth() },
+  settings: mergeSettings(defaultSettings(), loadJSON(LS_SETTINGS, null)),
+  events: [],
+  hiddenCats: new Set(),
+  modal: { id: null, date: null }
+};
+
+const loadedEvents = loadJSON(LS_EVENTS, null);
+state.events = Array.isArray(loadedEvents) ? loadedEvents : sampleEvents();
+
+/* ---------- 主题应用 ---------- */
+function effectiveTheme() {
+  const t = THEMES[state.settings.themeId] || THEMES.cream;
+  const c = state.settings.custom || {};
+  return {
+    ...t,
+    accent: c.accent || t.accent,
+    page: c.page || t.page,
+    pattern: c.pattern !== undefined ? c.pattern : t.pattern,
+    font: c.font || t.font,
+    radius: c.radius !== undefined ? c.radius : t.radius,
+    bgImage: c.bgImage || ''
+  };
+}
+
+function applySettings() {
+  const s = state.settings;
+  const t = effectiveTheme();
+  const root = document.documentElement;
+  const dark = luminance(t.page) < 0.5;
+  const ink = dark ? t.inkLight : t.inkDark;
+  const cellBg = mixHex(t.page, t.accent, dark ? 0.10 : 0.05);
+  const accentSoft = mixHex(t.page, t.accent, dark ? 0.24 : 0.16);
+  const weekendSoft = mixHex(t.page, t.weekend, dark ? 0.18 : 0.12);
+  const accentContrast = luminance(t.accent) > 0.55 ? '#1b1b1b' : '#ffffff';
+  const pat = PATTERNS.find((p) => p.id === t.pattern) || PATTERNS[0];
+
+  root.style.setProperty('--font', t.font);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-contrast', accentContrast);
+  root.style.setProperty('--accent-soft', accentSoft);
+  root.style.setProperty('--bg', t.backdrop);
+  root.style.setProperty('--page-bg', t.page);
+  root.style.setProperty('--ink', ink);
+  root.style.setProperty('--sub', rgba(ink, 0.62));
+  root.style.setProperty('--line', rgba(ink, dark ? 0.22 : 0.16));
+  root.style.setProperty('--cell-bg', cellBg);
+  root.style.setProperty('--bar-bg', rgba(t.page, 0.92));
+  root.style.setProperty('--weekend', t.weekend);
+  root.style.setProperty('--weekend-soft', weekendSoft);
+  root.style.setProperty('--radius', `${t.radius}px`);
+  root.style.setProperty('--pattern-image', pat.css);
+  root.style.setProperty('--pattern-size', pat.size);
+  root.style.setProperty('--pattern-color', rgba(t.accent, 0.3));
+  root.style.setProperty('--bg-image', t.bgImage ? `url("${t.bgImage}")` : 'none');
+
+  document.body.classList.toggle('no-grid', !s.gridLines);
+  document.body.classList.toggle('no-weekend', !s.weekendShade);
+  document.body.classList.toggle('decor-off', !s.showDecor);
+  $$('.stage-decor').forEach((el) => { el.textContent = t.decor; });
+}
+
+function applyLanguage() {
+  const l = currentLang();
+  document.documentElement.lang = l;
+  document.title = t('appTitle');
+  $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  $$('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+  const sel = $('#lang-select');
+  if (sel) sel.value = l;
+}
+
+function saveSettings() {
+  saveJSON(LS_SETTINGS, state.settings);
+}
+
+/* ---------- 事件辅助 ---------- */
+function loadCats() {
+  const custom = state.settings.customCats || [];
+  return DEFAULT_CATS.concat(custom);
+}
+
+function catById(id) {
+  const cats = loadCats();
+  return cats.find((c) => c.id === id)
+    || cats.find((c) => c.id === 'other')
+    || { id: 'other', name: { 'zh-CN': '其他', 'zh-TW': '其他', en: 'Other' }, color: '#8b5cf6' };
+}
+
+function dayEvents(key) {
+  return state.events
+    .filter((e) => (!e.end || e.end < e.start ? key === e.start : (key >= e.start && key <= e.end)))
+    .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99') || a.title.localeCompare(b.title));
+}
+
+function visibleEvents(key) {
+  return dayEvents(key).filter((e) => !state.hiddenCats.has(e.category));
+}
+
+function chipColorStyle(color) {
+  return `background:${color};color:${luminance(color) > 0.55 ? '#1b1b1b' : '#ffffff'}`;
+}
+
+function eventChipHTML(e) {
+  const c = catById(e.category);
+  const label = (e.time ? e.time + ' ' : '') + e.title;
+  return `<button type="button" class="chip" style="${chipColorStyle(c.color)}" data-id="${esc(e.id)}" title="${esc(label)}">${esc(label)}</button>`;
+}
+
+/* ---------- 月历渲染 ---------- */
+function renderWeekHeader() {
+  const start = Number(state.settings.startWeek) || 1;
+  const cells = [];
+  for (let i = 0; i < 7; i++) {
+    const wd = (start + i) % 7;
+    cells.push(`<div class="wk${wd === 0 || wd === 6 ? ' wk-end' : ''}">${weekFull(wd)}</div>`);
+  }
+  $('#week-header').innerHTML = cells.join('');
+}
+
+function renderCalendar() {
+  const { y, m } = state.view;
+  $('#month-label').textContent = t('monthLabelFmt', { y, m: m + 1, month: monthName(m) });
+
+  renderWeekHeader();
+
+  const start = Number(state.settings.startWeek) || 1;
+  const dim = new Date(y, m + 1, 0).getDate();
+  const firstWd = new Date(y, m, 1).getDay();
+  const offset = (firstWd - start + 7) % 7;
+  const tk = todayKey();
+
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const day = i - offset + 1;
+    let yy = y, mm = m, dd = day, outside = false;
+
+    if (day < 1) {
+      const p = new Date(y, m, 0);
+      yy = p.getFullYear(); mm = p.getMonth(); dd = p.getDate() + day; outside = true;
+    } else if (day > dim) {
+      const n = new Date(y, m + 1, 1);
+      yy = n.getFullYear(); mm = n.getMonth(); dd = day - dim; outside = true;
+    }
+
+    const key = dateKeyOf(yy, mm, dd);
+    const wd = (start + i) % 7;
+    const cls = ['cal-cell'];
+    if (outside) cls.push('outside');
+    if (key === tk) cls.push('is-today');
+    if (wd === 0 || wd === 6) cls.push('is-weekend');
+
+    const evs = visibleEvents(key);
+    const chips = evs.slice(0, 3).map(eventChipHTML).join('');
+    const more = evs.length > 3 ? `<button type="button" class="more" data-key="${key}">${esc(t('moreLabel', { n: evs.length - 3 }))}</button>` : '';
+
+    html += `<div class="${cls.join(' ')}" data-key="${key}">
+      <span class="cell-num">${dd}</span>
+      <div class="cell-events">${chips}${more}</div>
+    </div>`;
+  }
+
+  $('#cal-grid').innerHTML = html;
+  renderMonthEvents();
+}
+
+function renderMonthEvents() {
+  const { y, m } = state.view;
+  const start = dateKeyOf(y, m, 1);
+  const end = dateKeyOf(y, m + 1, 0);
+  const list = state.events
+    .filter((e) => e.start <= end && (e.end || e.start) >= start)
+    .sort((a, b) => a.start.localeCompare(b.start) || (a.time || '').localeCompare(b.time || ''));
+  const wrap = $('#month-events');
+  $('#month-events-title').textContent = t('monthEventsTitleFmt', { y, m: m + 1, month: monthName(m), n: list.length });
+
+  if (!list.length) {
+    wrap.innerHTML = `<div class="empty-tip">${t('emptyMonth')}</div>`;
+    return;
+  }
+
+  wrap.innerHTML = list.map((e) => {
+    const c = catById(e.category);
+    const range = e.end && e.end !== e.start ? `${e.start} → ${e.end}` : e.start;
+    const meta = [range, e.time && e.time, catName(c)].filter(Boolean).join(' · ');
+    return `<button type="button" class="ev-row" data-id="${esc(e.id)}">
+      <span class="ev-dot" style="background:${c.color}"></span>
+      <span class="ev-main">
+        <span class="ev-title">${esc(e.title)}</span>
+        <span class="ev-meta">${esc(meta)}</span>
+      </span>
+    </button>`;
+  }).join('');
+}
+
+/* ---------- 分类图例 ---------- */
+function renderCats() {
+  const cats = loadCats();
+  $('#cat-legend').innerHTML = cats.map((c) => {
+    const off = state.hiddenCats.has(c.id);
+    return `<div class="cat-item${off ? ' off' : ''}" data-id="${esc(c.id)}" title="${esc(t('catLegendTip'))}">
+      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-name">${esc(catName(c))}</span>
+      ${c.custom ? `<button type="button" class="cat-del" data-id="${esc(c.id)}" title="${esc(t('titleDeleteCat'))}">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderCatOptions() {
+  $('#ev-cat').innerHTML = loadCats().map((c) =>
+    `<option value="${esc(c.id)}">${esc(catName(c))}</option>`).join('');
+}
+
+/* ---------- 弹窗 ---------- */
+function openModal(dateKeyStr, eventId) {
+  const ev = eventId ? state.events.find((e) => e.id === eventId) : null;
+  const key = ev ? ev.start : dateKeyStr;
+
+  state.modal = { id: ev ? ev.id : null, date: key };
+  renderCatOptions();
+
+  $('#ev-id').value = ev ? ev.id : '';
+  $('#ev-title').value = ev ? ev.title : '';
+  $('#ev-start').value = key;
+  $('#ev-end').value = ev && ev.end ? ev.end : '';
+  $('#ev-time').value = ev && ev.time ? ev.time : '';
+  $('#ev-cat').value = ev ? ev.category : 'other';
+  $('#ev-note').value = ev && ev.note ? ev.note : '';
+  $('#modal-title').textContent = t(ev ? 'modalEdit' : 'modalAdd');
+  $('#btn-ev-delete').classList.toggle('hidden', !ev);
+
+  updateDayList();
+  $('#modal-overlay').classList.remove('hidden');
+  setTimeout(() => $('#ev-title').focus(), 60);
+}
+
+function closeModal() {
+  $('#modal-overlay').classList.add('hidden');
+  state.modal = { id: null, date: null };
+}
+
+function updateDayList() {
+  const key = $('#ev-start').value;
+  const list = dayEvents(key);
+  const el = $('#day-list');
+  if (!key) { el.innerHTML = ''; return; }
+
+  const parts = key.split('-').map(Number);
+  $('#day-list-title').textContent = t('dayListTitleFmt', {
+    y: parts[0], m: parts[1], d: parts[2], month: monthName(parts[1] - 1), n: list.length
+  });
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-tip">${t('emptyDay')}</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map((e) => {
+    const c = catById(e.category);
+    return `<button type="button" class="day-item" data-id="${esc(e.id)}">
+      <span class="dot" style="background:${c.color}"></span>
+      <span class="tt">${esc(e.title)}</span>
+      <span class="tm">${e.time ? esc(e.time) : esc(t('fullDay'))}</span>
+    </button>`;
+  }).join('');
+}
+
+function saveEventFromForm() {
+  const id = $('#ev-id').value;
+  const title = $('#ev-title').value.trim();
+  const start = $('#ev-start').value;
+  const end = $('#ev-end').value;
+  const time = $('#ev-time').value;
+  const category = $('#ev-cat').value;
+  const note = $('#ev-note').value.trim();
+
+  if (!title) { toast(t('toastTitleRequired')); return; }
+  if (!start) { toast(t('toastDateRequired')); return; }
+  if (end && end < start) { toast(t('toastEndBeforeStart')); return; }
+
+  const ev = { id: id || `ev-${Date.now()}`, title, start, end, time, category, note };
+
+  if (id) {
+    const idx = state.events.findIndex((e) => e.id === id);
+    if (idx >= 0) state.events[idx] = ev;
+  } else {
+    state.events.push(ev);
+  }
+
+  saveJSON(LS_EVENTS, state.events);
+  closeModal();
+  renderCalendar();
+  toast(t('toastSaved'));
+}
+
+function deleteCurrentEvent() {
+  const id = $('#ev-id').value;
+  if (!id) return;
+  if (!confirm(t('confirmDeleteEvent'))) return;
+  state.events = state.events.filter((e) => e.id !== id);
+  saveJSON(LS_EVENTS, state.events);
+  closeModal();
+  renderCalendar();
+  toast(t('toastDeleted'));
+}
+
+/* ---------- 数据导入导出 ---------- */
+function exportData() {
+  const payload = {
+    app: 'printly-calendar',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    settings: state.settings,
+    events: state.events
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${t('exportFileBase')}-${todayKey()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(t('toastExported'));
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || !Array.isArray(data.events)) throw new Error('bad format');
+      state.events = data.events.map((e) => ({
+        id: String(e.id || `ev-${Date.now()}-${Math.random()}`),
+        title: String(e.title || t('unnamedEvent')),
+        start: String(e.start || todayKey()),
+        end: e.end ? String(e.end) : '',
+        time: e.time ? String(e.time) : '',
+        category: String(e.category || 'other'),
+        note: e.note ? String(e.note) : ''
+      }));
+      if (data.settings) state.settings = mergeSettings(defaultSettings(), data.settings);
+      saveJSON(LS_EVENTS, state.events);
+      saveSettings();
+      applySettings();
+      refreshLanguage();
+      toast(t('toastImported', { n: state.events.length }));
+    } catch (err) {
+      toast(t('toastImportFail'));
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- 打印页生成 ---------- */
+function parseMonth(v) {
+  const [y, m] = String(v || '').split('-').map(Number);
+  if (!y || !m) return null;
+  return { y, m: m - 1 };
+}
+
+function monthsInRange() {
+  let start = parseMonth(state.settings.printStart);
+  let end = parseMonth(state.settings.printEnd);
+  if (!start || !end) {
+    start = parseMonth(defaultSettings().printStart);
+    end = parseMonth(defaultSettings().printEnd);
+  }
+  if (start.y * 12 + start.m > end.y * 12 + end.m) {
+    const tmp = start; start = end; end = tmp;
+    state.settings.printStart = `${start.y}-${pad2(start.m + 1)}`;
+    state.settings.printEnd = `${end.y}-${pad2(end.m + 1)}`;
+    saveSettings();
+    syncPrintControls();
+  }
+  const out = [];
+  const cursor = new Date(start.y, start.m, 1);
+  const last = new Date(end.y, end.m, 1);
+  let guard = 0;
+  while (cursor <= last && guard < 240) {
+    out.push({ y: cursor.getFullYear(), m: cursor.getMonth() });
+    cursor.setMonth(cursor.getMonth() + 1);
+    guard++;
+  }
+  return out;
+}
+
+function holesHTML() {
+  if (!state.settings.showHoles) return '';
+  return `<span class="p-hole" style="left:62mm"></span><span class="p-hole" style="left:142mm"></span>`;
+}
+
+function decorHTML() {
+  const t2 = effectiveTheme();
+  if (!state.settings.showDecor) return '';
+  const g = esc(t2.decor);
+  return `<span class="p-decor tl">${g}</span><span class="p-decor tr">${g}</span><span class="p-decor bl">${g}</span><span class="p-decor br">${g}</span>`;
+}
+
+function guideHTML() {
+  return `<div class="p-guide"><span>${esc(t('bindingGuide'))}</span></div>`;
+}
+
+function coverKicker(first, last) {
+  if (currentLang() === 'en') {
+    return `${MONTHS_EN[first.m]} ${first.y} — ${MONTHS_EN[last.m]} ${last.y}`;
+  }
+  return `${first.y}.${pad2(first.m + 1)} — ${last.y}.${pad2(last.m + 1)}`;
+}
+
+function monthPageHTML(month, pageNum, total) {
+  const { y, m } = month;
+  const start = Number(state.settings.startWeek) || 1;
+  const dim = new Date(y, m + 1, 0).getDate();
+  const offset = (new Date(y, m, 1).getDay() - start + 7) % 7;
+  const tk = todayKey();
+
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const wd = (start + i) % 7;
+    return `<div class="p-wk${wd === 0 || wd === 6 ? ' wk-end' : ''}">${weekShort(wd)}</div>`;
+  }).join('');
+
+  let cells = '';
+  for (let i = 0; i < 42; i++) {
+    const day = i - offset + 1;
+    let yy = y, mm = m, dd = day, outside = false;
+
+    if (day < 1) {
+      const p = new Date(y, m, 0);
+      yy = p.getFullYear(); mm = p.getMonth(); dd = p.getDate() + day; outside = true;
+    } else if (day > dim) {
+      const n = new Date(y, m + 1, 1);
+      yy = n.getFullYear(); mm = n.getMonth(); dd = day - dim; outside = true;
+    }
+
+    const key = dateKeyOf(yy, mm, dd);
+    const wd = (start + i) % 7;
+    const cls = ['p-cell'];
+    if (outside) cls.push('outside');
+    if (key === tk) cls.push('is-today');
+    if (wd === 0 || wd === 6) cls.push('is-weekend');
+
+    const evs = dayEvents(key);
+    const chips = evs.slice(0, 4).map((e) => {
+      const c = catById(e.category);
+      const label = (e.time ? e.time + ' ' : '') + e.title;
+      return `<span class="p-chip" style="${chipColorStyle(c.color)}">${esc(label)}</span>`;
+    }).join('');
+    const more = evs.length > 4 ? `<span class="p-more">${esc(t('moreLabel', { n: evs.length - 4 }))}</span>` : '';
+
+    cells += `<div class="${cls.join(' ')}">
+      <span class="p-num">${dd}</span>
+      <div class="p-events">${chips}${more}</div>
+    </div>`;
+  }
+
+  const notes = state.settings.showNotes ? `<div class="p-notes">${esc(t('notes'))}</div>` : '';
+
+  return `<section class="print-page">
+    <div class="p-bg"></div>
+    ${guideHTML()}
+    ${holesHTML()}
+    ${decorHTML()}
+    <header class="p-head">
+      <p class="p-year">${esc(t('pYearFmt', { y, month: monthName(m) }))}</p>
+      <h2 class="p-title">${esc(t('pTitleNum', { m: m + 1, month: monthName(m) }))}</h2>
+      <p class="p-sub">${esc(t('pSubFmt', { monthEn: MONTHS_EN[m], month: monthName(m), y }))}</p>
+    </header>
+    <div class="p-week">${week}</div>
+    <div class="p-grid">${cells}</div>
+    <footer class="p-footer">${notes}<div class="p-page">${pageNum} / ${total}</div></footer>
+  </section>`;
+}
+
+function coverPageHTML(months) {
+  const first = months[0], last = months[months.length - 1];
+  const chips = Array.from({ length: 12 }, (_, i) => {
+    const inRange = months.some((mo) => mo.m === i);
+    return `<span class="cover-month${inRange ? ' in-range' : ''}">${esc(t('coverMonthFmt', { m: i + 1, monthShort: MONTHS_EN[i] }))}</span>`;
+  }).join('');
+
+  return `<section class="print-page cover-page">
+    <div class="p-bg"></div>
+    ${guideHTML()}
+    ${holesHTML()}
+    ${decorHTML()}
+    <div class="cover-content">
+      <p class="cover-kicker">${esc(coverKicker(first, last))}</p>
+      <h1 class="cover-title">${esc(state.settings.coverTitle || t('brandName'))}</h1>
+      <div class="cover-line"></div>
+      <p class="cover-sub">${esc(t('coverSub'))}</p>
+      <div class="cover-months">${chips}</div>
+    </div>
+  </section>`;
+}
+
+function buildPrintPages() {
+  const months = monthsInRange();
+  const pages = [];
+  if (state.settings.includeCover) pages.push(coverPageHTML(months));
+  const total = months.length + (state.settings.includeCover ? 1 : 0);
+  months.forEach((mo, i) => {
+    pages.push(monthPageHTML(mo, i + 1 + (state.settings.includeCover ? 1 : 0), total));
+  });
+
+  $('#print-root').innerHTML = `
+    <div class="preview-bar">
+      <div><strong>${esc(t('previewBar', { n: pages.length, m: months.length }))}</strong></div>
+      <div>
+        <button type="button" id="pb-print" class="btn primary mini">${esc(t('btnPrintPreview'))}</button>
+        <button type="button" id="pb-close" class="btn ghost mini">${esc(t('btnClose'))}</button>
+      </div>
+    </div>
+    <div class="pages-wrap">${pages.join('')}</div>`;
+
+  $('#pb-print').addEventListener('click', () => window.print());
+  $('#pb-close').addEventListener('click', closePreview);
+}
+
+function openPreview() {
+  buildPrintPages();
+  document.body.classList.add('preview-open');
+}
+
+function closePreview() {
+  document.body.classList.remove('preview-open');
+}
+
+/* ---------- 控件同步 ---------- */
+function syncControlsFromSettings() {
+  const s = state.settings;
+  const th = effectiveTheme();
+  $('#accent-color').value = th.accent;
+  $('#bg-color').value = th.page;
+  $('#pattern-select').value = th.pattern;
+  $('#font-select').value = th.font;
+  $('#radius-range').value = th.radius;
+  $('#radius-val').textContent = `${th.radius}px`;
+  $('#start-week').value = String(s.startWeek);
+  $('#chk-holes').checked = !!s.showHoles;
+  $('#chk-decor').checked = !!s.showDecor;
+  $('#chk-grid').checked = !!s.gridLines;
+  $('#chk-weekend').checked = !!s.weekendShade;
+  $('#chk-cover').checked = !!s.includeCover;
+  $('#cover-title').value = s.coverTitle || '';
+  $('#chk-notes').checked = !!s.showNotes;
+  $('#bg-tip').textContent = s.custom && s.custom.bgImage ? t('bgTipUsed') : t('bgTipDefault');
+  syncPrintControls();
+}
+
+function syncPrintControls() {
+  $('#print-start').value = state.settings.printStart;
+  $('#print-end').value = state.settings.printEnd;
+}
+
+function renderThemeGrid() {
+  const wrap = $('#theme-grid');
+  wrap.innerHTML = Object.entries(THEMES).map(([id]) => `
+    <button type="button" class="theme-card${state.settings.themeId === id ? ' active' : ''}" data-theme="${id}">
+      <span class="theme-swatch" style="background:${THEMES[id].swatch}"></span>
+      <span class="theme-name">${esc(themeName(id))}</span>
+      <span class="theme-desc">${esc(themeDesc(id))}</span>
+    </button>`).join('');
+
+  $$('.theme-card', wrap).forEach((btn) => {
+    btn.addEventListener('click', () => selectTheme(btn.dataset.theme));
+  });
+}
+
+function selectTheme(id) {
+  const th = THEMES[id];
+  if (!th) return;
+  state.settings.themeId = id;
+  state.settings.custom = {
+    accent: th.accent,
+    page: th.page,
+    pattern: th.pattern,
+    font: th.font,
+    radius: th.radius,
+    bgImage: ''
+  };
+  saveSettings();
+  applySettings();
+  syncControlsFromSettings();
+  renderThemeGrid();
+  toast(t('toastThemeApplied', { name: themeName(id) }));
+}
+
+function fillSelects() {
+  const patternSel = $('#pattern-select');
+  patternSel.innerHTML = PATTERNS.map((p) => `<option value="${p.id}">${esc(patternName(p))}</option>`).join('');
+
+  const fontSel = $('#font-select');
+  fontSel.innerHTML = FONTS.map((f) => `<option value="${esc(f.css)}">${esc(fontName(f))}</option>`).join('');
+}
+
+function refreshLanguage() {
+  fillSelects();
+  applyLanguage();
+  syncControlsFromSettings();
+  renderThemeGrid();
+  renderCats();
+  renderCalendar();
+  if (!$('#modal-overlay').classList.contains('hidden')) updateDayList();
+  if (document.body.classList.contains('preview-open')) buildPrintPages();
+}
+
+/* ---------- 提示 ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindEvents() {
+  /* 语言切换 */
+  $('#lang-select').addEventListener('change', (e) => {
+    const oldLang = currentLang();
+    if (state.settings.coverTitle === I18N[oldLang].brandName) {
+      state.settings.coverTitle = I18N[e.target.value].brandName;
+    }
+    state.settings.lang = e.target.value;
+    saveSettings();
+    refreshLanguage();
+  });
+
+  /* 月份导航 */
+  $('#btn-prev').addEventListener('click', () => {
+    state.view.m--;
+    if (state.view.m < 0) { state.view.m = 11; state.view.y--; }
+    renderCalendar();
+  });
+  $('#btn-next').addEventListener('click', () => {
+    state.view.m++;
+    if (state.view.m > 11) { state.view.m = 0; state.view.y++; }
+    renderCalendar();
+  });
+  $('#btn-today').addEventListener('click', () => {
+    state.view = { y: new Date().getFullYear(), m: new Date().getMonth() };
+    renderCalendar();
+  });
+
+  /* 侧栏标签 */
+  $$('.tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      $$('.tab').forEach((b) => b.classList.toggle('active', b === btn));
+      $$('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${btn.dataset.tab}`));
+    });
+  });
+
+  /* 日历格子 */
+  $('#cal-grid').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (chip && chip.dataset.id) { openModal(null, chip.dataset.id); return; }
+
+    const more = e.target.closest('.more');
+    if (more && more.dataset.key) { openModal(more.dataset.key); return; }
+
+    const cell = e.target.closest('.cal-cell');
+    if (cell && cell.dataset.key) openModal(cell.dataset.key);
+  });
+
+  /* 侧栏日程列表 */
+  $('#month-events').addEventListener('click', (e) => {
+    const row = e.target.closest('.ev-row');
+    if (row && row.dataset.id) openModal(null, row.dataset.id);
+  });
+
+  /* 分类图例 */
+  $('#cat-legend').addEventListener('click', (e) => {
+    const del = e.target.closest('.cat-del');
+    if (del) {
+      const id = del.dataset.id;
+      if (!confirm(t('confirmDeleteCat'))) return;
+      state.settings.customCats = (state.settings.customCats || []).filter((c) => c.id !== id);
+      state.events = state.events.map((ev) => ev.category === id ? { ...ev, category: 'other' } : ev);
+      saveJSON(LS_EVENTS, state.events);
+      saveSettings();
+      renderCats();
+      renderCalendar();
+      return;
+    }
+    const item = e.target.closest('.cat-item');
+    if (!item) return;
+    const id = item.dataset.id;
+    if (state.hiddenCats.has(id)) state.hiddenCats.delete(id);
+    else state.hiddenCats.add(id);
+    renderCats();
+    renderCalendar();
+  });
+
+  $('#btn-add-cat').addEventListener('click', () => {
+    const name = $('#new-cat-name').value.trim();
+    const color = $('#new-cat-color').value;
+    if (!name) { toast(t('toastCatName')); return; }
+    state.settings.customCats = state.settings.customCats || [];
+    state.settings.customCats.push({ id: `cat-${Date.now()}`, name, color, custom: true });
+    $('#new-cat-name').value = '';
+    saveSettings();
+    renderCats();
+    toast(t('toastCatAdded', { name }));
+  });
+
+  /* 弹窗 */
+  $('#btn-modal-close').addEventListener('click', closeModal);
+  $('#btn-ev-cancel').addEventListener('click', closeModal);
+  $('#btn-ev-delete').addEventListener('click', deleteCurrentEvent);
+  $('#event-form').addEventListener('submit', (e) => { e.preventDefault(); saveEventFromForm(); });
+  $('#ev-start').addEventListener('change', updateDayList);
+  $('#day-list').addEventListener('click', (e) => {
+    const item = e.target.closest('.day-item');
+    if (item && item.dataset.id) {
+      const ev = state.events.find((x) => x.id === item.dataset.id);
+      if (ev) openModal(ev.start, ev.id);
+    }
+  });
+
+  /* 数据 */
+  $('#btn-export').addEventListener('click', exportData);
+  $('#file-import').addEventListener('change', (e) => {
+    if (e.target.files[0]) importData(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('#btn-clear').addEventListener('click', () => {
+    if (!confirm(t('confirmClear'))) return;
+    state.events = [];
+    saveJSON(LS_EVENTS, state.events);
+    renderCalendar();
+    toast(t('toastCleared'));
+  });
+
+  /* 设计 */
+  $('#accent-color').addEventListener('input', (e) => {
+    state.settings.custom.accent = e.target.value;
+    applySettings(); saveSettings();
+  });
+  $('#bg-color').addEventListener('input', (e) => {
+    state.settings.custom.page = e.target.value;
+    applySettings(); saveSettings();
+  });
+  $('#pattern-select').addEventListener('change', (e) => {
+    state.settings.custom.pattern = e.target.value;
+    applySettings(); saveSettings();
+  });
+  $('#font-select').addEventListener('change', (e) => {
+    state.settings.custom.font = e.target.value;
+    applySettings(); saveSettings();
+  });
+  $('#radius-range').addEventListener('input', (e) => {
+    state.settings.custom.radius = Number(e.target.value);
+    $('#radius-val').textContent = `${e.target.value}px`;
+    applySettings(); saveSettings();
+  });
+  $('#bg-file').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.settings.custom.bgImage = String(reader.result);
+      saveSettings();
+      applySettings();
+      syncControlsFromSettings();
+      toast(t('toastBgApplied'));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+  $('#bg-remove').addEventListener('click', () => {
+    state.settings.custom.bgImage = '';
+    saveSettings();
+    applySettings();
+    syncControlsFromSettings();
+    toast(t('toastBgRemoved'));
+  });
+
+  const boolCheck = (id, key) => {
+    $(id).addEventListener('change', (e) => {
+      state.settings[key] = e.target.checked;
+      applySettings();
+      saveSettings();
+    });
+  };
+  boolCheck('#chk-holes', 'showHoles');
+  boolCheck('#chk-decor', 'showDecor');
+  boolCheck('#chk-grid', 'gridLines');
+  boolCheck('#chk-weekend', 'weekendShade');
+  boolCheck('#chk-cover', 'includeCover');
+  boolCheck('#chk-notes', 'showNotes');
+
+  $('#start-week').addEventListener('change', (e) => {
+    state.settings.startWeek = Number(e.target.value);
+    saveSettings();
+    renderCalendar();
+  });
+
+  /* 打印 */
+  $('#print-start').addEventListener('change', (e) => {
+    state.settings.printStart = e.target.value || state.settings.printStart;
+    saveSettings();
+  });
+  $('#print-end').addEventListener('change', (e) => {
+    state.settings.printEnd = e.target.value || state.settings.printEnd;
+    saveSettings();
+  });
+  $('#btn-range-year').addEventListener('click', () => {
+    const y = new Date().getFullYear();
+    state.settings.printStart = `${y}-01`;
+    state.settings.printEnd = `${y}-12`;
+    saveSettings();
+    syncPrintControls();
+    toast(t('toastRangeYear', { y }));
+  });
+  $('#btn-range-next12').addEventListener('click', () => {
+    const start = new Date();
+    const end = new Date(start.getFullYear(), start.getMonth() + 11, 1);
+    state.settings.printStart = `${start.getFullYear()}-${pad2(start.getMonth() + 1)}`;
+    state.settings.printEnd = `${end.getFullYear()}-${pad2(end.getMonth() + 1)}`;
+    saveSettings();
+    syncPrintControls();
+    toast(t('toastRangeNext12'));
+  });
+  $('#cover-title').addEventListener('change', (e) => {
+    state.settings.coverTitle = e.target.value;
+    saveSettings();
+  });
+
+  $('#btn-build-preview').addEventListener('click', openPreview);
+  $('#btn-print-side').addEventListener('click', () => { buildPrintPages(); window.print(); });
+
+  /* 顶部按钮 */
+  $('#btn-preview').addEventListener('click', openPreview);
+  $('#btn-print').addEventListener('click', () => { buildPrintPages(); window.print(); });
+
+  /* 快捷键 */
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('#modal-overlay').classList.contains('hidden')) closeModal();
+    else if (document.body.classList.contains('preview-open')) closePreview();
+  });
+
+  window.addEventListener('beforeprint', buildPrintPages);
+}
+
+/* ---------- 启动 ---------- */
+function init() {
+  fillSelects();
+  applyLanguage();
+  applySettings();
+  syncControlsFromSettings();
+  renderThemeGrid();
+  renderCats();
+  renderCalendar();
+  bindEvents();
+  if (state.events.length === 0) renderMonthEvents();
+}
+
+init();
+
+</script>
+</body>
+</html>
