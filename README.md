@@ -3,6 +3,8 @@
 一个月视图行事历 Web 应用：以「星期为列、日期为网格」，支持 DIY 风格与预设模板，
 并针对**打印 + 打孔装订成册**做了专门设计。
 
+> English documentation: [README_EN.md](./README_EN.md)
+
 ## 快速开始
 
 纯静态网页，无需安装、无需构建：
