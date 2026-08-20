@@ -7,16 +7,33 @@ preset templates, and dedicated support for **printing + punching holes to bind 
 
 ## Quick Start
 
-Pure static web pages — no installation or build step required:
+**Easiest — no download, no install**: open the live site
 
-1. Open `index.html` directly in a browser, or
-2. Serve it locally (optional):
+👉 **https://toby-tb.github.io/printly-calendar/**
+
+Anyone with a browser (desktop, tablet, or phone) can start using it right away.
+
+**To keep an offline copy on your own computer**:
+
+1. On the repo page click the green `Code` button → `Download ZIP`, unzip it, and
+   double-click `index.html`; or download the single-file `calendar-all-in-one.html`
+   and double-click it
+2. Or serve it locally (optional):
    ```bash
    python3 -m http.server 8080
    # then visit http://localhost:8080
    ```
 
 Events are stored in the browser's `localStorage` and can be migrated via JSON export/import.
+
+## How to Use (step by step)
+
+1. **View the month**: the calendar grid is in the center; today is circled and colored chips are events
+2. **Add an event**: click any date → fill in title, date, time, category → click Save
+3. **Edit an event**: click a colored chip in the calendar, or an item in the "Month events" list on the left
+4. **Change the style**: open the `🎨 Design` tab → pick a preset template, then fine-tune accent / pattern / font
+5. **Print a booklet**: open the `🖨 Print` tab → choose a start month and an end month → `Generate print preview` → check → `Print`
+   - Each page is A4 with an automatic 26mm top binding area and optional punch-hole marks for ring/hole binding
 
 ## Languages
 
