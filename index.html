@@ -154,6 +154,22 @@
               <button id="btn-range-year" class="btn mini ghost" data-i18n="btnRangeYear">本年度</button>
               <button id="btn-range-next12" class="btn mini ghost" data-i18n="btnRangeNext12">未来 12 个月</button>
             </div>
+            <p class="tip" id="range-summary"></p>
+          </div>
+
+          <div class="panel-block">
+            <h3 data-i18n="multiMonthTitle">多选月份（可选）</h3>
+            <p class="tip" data-i18n="multiMonthTip">点击月份可多选；清空后可回到「起始月—结束月」范围模式。</p>
+            <div class="month-picker-head">
+              <button id="mp-prev" class="icon-btn icon-btn-sm" data-i18n-title="titlePrevYear" aria-label="Previous year">‹</button>
+              <span id="mp-year" class="mp-year">2026</span>
+              <button id="mp-next" class="icon-btn icon-btn-sm" data-i18n-title="titleNextYear" aria-label="Next year">›</button>
+            </div>
+            <div id="mp-grid" class="month-picker-grid"></div>
+            <div class="mp-actions">
+              <button id="mp-clear" class="btn mini ghost" data-i18n="mpClear">清除选择</button>
+              <span id="mp-count" class="tip"></span>
+            </div>
           </div>
 
           <div class="panel-block">

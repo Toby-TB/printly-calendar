@@ -285,6 +285,48 @@ button { cursor: pointer; }
 
 .row-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 
+/* 月份多选 */
+.month-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mp-year { font-size: 15px; font-weight: 800; min-width: 64px; text-align: center; }
+
+.icon-btn-sm { width: 28px; height: 28px; font-size: 16px; }
+
+.month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.mp-month {
+  border: 1px solid var(--line);
+  background: var(--cell-bg);
+  border-radius: 9px;
+  padding: 8px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sub);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.mp-month:hover { border-color: var(--accent); color: var(--accent); }
+
+.mp-month.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.mp-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mp-actions .tip { margin: 0; }
+
 /* 模板卡片 */
 .theme-grid {
   display: grid;

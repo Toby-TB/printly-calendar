@@ -65,6 +65,7 @@ the browser language.
 
 ### 🖨 Print & Bind
 - **Select a date range**: start month + end month, with quick presets "This year" and "Next 12 months"
+- **Multi-select months**: click any months (even non-consecutive) to print them all in one pass
 - One A4 page is generated per month in the range (with a preview for checking)
 - **Every page reserves a 26mm top binding area**, with a dashed guide and optional punch-hole marks (for ring/hole binding)
 - Optional cover page (custom title, highlighted months in range)

@@ -62,6 +62,12 @@ const I18N = {
     weekStartTitle: '周起始', weekStartLabel: '一周从哪一天开始', optMonday: '周一', optSunday: '周日',
     printRangeTitle: '选择日期范围', labelStartMonth: '起始月份', labelEndMonth: '结束月份',
     btnRangeYear: '本年度', btnRangeNext12: '未来 12 个月',
+    multiMonthTitle: '多选月份（可选）',
+    multiMonthTip: '点击月份可多选；清空后可回到「起始月—结束月」范围模式。',
+    mpClear: '清除选择',
+    titlePrevYear: '上一年', titleNextYear: '下一年',
+    mpSelectedFmt: '已选 {n} 个月',
+    rangeSummaryFmt: '当前范围：{start} ~ {end}，共 {n} 个月',
     pageOptsTitle: '页面选项', swCover: '首页封面', labelCoverTitle: '封面标题', coverPlaceholder: '拾光行事历', swNotes: '底部备注区',
     printTitle: '打印', btnBuildPreview: '生成打印预览', btnPrintDirect: '直接打印',
     printTip: '每页顶部自动预留 26mm 装订区，适合打圆孔 / 装订圈合成册。打印页包含全部分类（屏幕上的隐藏不影响打印）。打印时请在浏览器中开启「背景图形」。',
@@ -135,6 +141,12 @@ const I18N = {
     weekStartTitle: '週起始', weekStartLabel: '一週從哪一天開始', optMonday: '週一', optSunday: '週日',
     printRangeTitle: '選擇日期範圍', labelStartMonth: '起始月份', labelEndMonth: '結束月份',
     btnRangeYear: '本年度', btnRangeNext12: '未來 12 個月',
+    multiMonthTitle: '多選月份（可選）',
+    multiMonthTip: '點擊月份可多選；清空後可回到「起始月—結束月」範圍模式。',
+    mpClear: '清除選擇',
+    titlePrevYear: '上一年', titleNextYear: '下一年',
+    mpSelectedFmt: '已選 {n} 個月',
+    rangeSummaryFmt: '當前範圍：{start} ~ {end}，共 {n} 個月',
     pageOptsTitle: '頁面選項', swCover: '首頁封面', labelCoverTitle: '封面標題', coverPlaceholder: '拾光行事曆', swNotes: '底部備註區',
     printTitle: '列印', btnBuildPreview: '產生列印預覽', btnPrintDirect: '直接列印',
     printTip: '每頁頂部自動預留 26mm 裝訂區，適合打圓孔 / 裝訂圈合成冊。列印頁包含全部分類（螢幕上的隱藏不影響列印）。列印時請在瀏覽器中開啟「背景圖形」。',
@@ -208,6 +220,12 @@ const I18N = {
     weekStartTitle: 'Week start', weekStartLabel: 'Week starts on', optMonday: 'Monday', optSunday: 'Sunday',
     printRangeTitle: 'Select date range', labelStartMonth: 'Start month', labelEndMonth: 'End month',
     btnRangeYear: 'This year', btnRangeNext12: 'Next 12 months',
+    multiMonthTitle: 'Multi-select months (optional)',
+    multiMonthTip: 'Click months to multi-select; clear the selection to return to start/end range mode.',
+    mpClear: 'Clear selection',
+    titlePrevYear: 'Previous year', titleNextYear: 'Next year',
+    mpSelectedFmt: '{n} months selected',
+    rangeSummaryFmt: 'Current range: {start} – {end} · {n} months',
     pageOptsTitle: 'Page options', swCover: 'Cover page', labelCoverTitle: 'Cover title', coverPlaceholder: 'My Calendar', swNotes: 'Notes area at bottom',
     printTitle: 'Print', btnBuildPreview: 'Generate print preview', btnPrintDirect: 'Print directly',
     printTip: 'Each page reserves a 26mm top binding area for ring/hole binding. Printed pages include all categories (hiding a category on screen does not affect printing). Enable "Background graphics" in the browser print dialog.',
@@ -463,6 +481,7 @@ function defaultSettings() {
     includeCover: true,
     coverTitle: coverDefaults[lang] || '拾光行事历',
     showNotes: true,
+    selectedMonths: [],
     printStart: `${y}-01`,
     printEnd: `${y}-12`
   };
@@ -512,7 +531,8 @@ const state = {
   settings: mergeSettings(defaultSettings(), loadJSON(LS_SETTINGS, null)),
   events: [],
   hiddenCats: new Set(),
-  modal: { id: null, date: null }
+  modal: { id: null, date: null },
+  mpYear: now.getFullYear()
 };
 
 const loadedEvents = loadJSON(LS_EVENTS, null);
@@ -869,6 +889,14 @@ function parseMonth(v) {
 }
 
 function monthsInRange() {
+  const selected = state.settings.selectedMonths || [];
+  if (selected.length) {
+    return selected
+      .map(parseMonth)
+      .filter(Boolean)
+      .sort((a, b) => (a.y * 12 + a.m) - (b.y * 12 + b.m));
+  }
+
   let start = parseMonth(state.settings.printStart);
   let end = parseMonth(state.settings.printEnd);
   if (!start || !end) {
@@ -880,7 +908,6 @@ function monthsInRange() {
     state.settings.printStart = `${start.y}-${pad2(start.m + 1)}`;
     state.settings.printEnd = `${end.y}-${pad2(end.m + 1)}`;
     saveSettings();
-    syncPrintControls();
   }
   const out = [];
   const cursor = new Date(start.y, start.m, 1);
@@ -892,6 +919,57 @@ function monthsInRange() {
     guard++;
   }
   return out;
+}
+
+function selectedMonthSet() {
+  return new Set(state.settings.selectedMonths || []);
+}
+
+function formatMonthShort(y, m) {
+  if (currentLang() === 'en') return `${MONTHS_EN[m]} ${y}`;
+  return `${y}.${pad2(m + 1)}`;
+}
+
+function renderMonthPicker() {
+  const grid = $('#mp-grid');
+  if (!grid) return;
+  const y = state.mpYear;
+  $('#mp-year').textContent = String(y);
+  const sel = selectedMonthSet();
+
+  grid.innerHTML = Array.from({ length: 12 }, (_, i) => {
+    const key = `${y}-${pad2(i + 1)}`;
+    const active = sel.has(key);
+    return `<button type="button" class="mp-month${active ? ' active' : ''}" data-key="${key}">${esc(t('coverMonthFmt', { m: i + 1, monthShort: MONTHS_EN[i] }))}</button>`;
+  }).join('');
+
+  $('#mp-count').textContent = t('mpSelectedFmt', { n: sel.size });
+}
+
+function updateRangeSummary() {
+  const el = $('#range-summary');
+  if (!el) return;
+  const selected = state.settings.selectedMonths || [];
+  if (selected.length) {
+    const months = monthsInRange();
+    if (months.length) {
+      el.textContent = t('rangeSummaryFmt', {
+        start: formatMonthShort(months[0].y, months[0].m),
+        end: formatMonthShort(months[months.length - 1].y, months[months.length - 1].m),
+        n: months.length
+      });
+    }
+  } else {
+    const start = parseMonth(state.settings.printStart);
+    const end = parseMonth(state.settings.printEnd);
+    if (start && end) {
+      el.textContent = t('rangeSummaryFmt', {
+        start: formatMonthShort(start.y, start.m),
+        end: formatMonthShort(end.y, end.m),
+        n: monthsInRange().length
+      });
+    }
+  }
 }
 
 function holesHTML() {
@@ -1060,6 +1138,7 @@ function syncControlsFromSettings() {
 function syncPrintControls() {
   $('#print-start').value = state.settings.printStart;
   $('#print-end').value = state.settings.printEnd;
+  updateRangeSummary();
 }
 
 function renderThemeGrid() {
@@ -1107,6 +1186,7 @@ function refreshLanguage() {
   fillSelects();
   applyLanguage();
   syncControlsFromSettings();
+  renderMonthPicker();
   renderThemeGrid();
   renderCats();
   renderCalendar();
@@ -1309,17 +1389,25 @@ function bindEvents() {
   /* 打印 */
   $('#print-start').addEventListener('change', (e) => {
     state.settings.printStart = e.target.value || state.settings.printStart;
+    state.settings.selectedMonths = [];
     saveSettings();
+    renderMonthPicker();
+    syncPrintControls();
   });
   $('#print-end').addEventListener('change', (e) => {
     state.settings.printEnd = e.target.value || state.settings.printEnd;
+    state.settings.selectedMonths = [];
     saveSettings();
+    renderMonthPicker();
+    syncPrintControls();
   });
   $('#btn-range-year').addEventListener('click', () => {
     const y = new Date().getFullYear();
     state.settings.printStart = `${y}-01`;
     state.settings.printEnd = `${y}-12`;
+    state.settings.selectedMonths = [];
     saveSettings();
+    renderMonthPicker();
     syncPrintControls();
     toast(t('toastRangeYear', { y }));
   });
@@ -1328,10 +1416,41 @@ function bindEvents() {
     const end = new Date(start.getFullYear(), start.getMonth() + 11, 1);
     state.settings.printStart = `${start.getFullYear()}-${pad2(start.getMonth() + 1)}`;
     state.settings.printEnd = `${end.getFullYear()}-${pad2(end.getMonth() + 1)}`;
+    state.settings.selectedMonths = [];
     saveSettings();
+    renderMonthPicker();
     syncPrintControls();
     toast(t('toastRangeNext12'));
   });
+
+  /* 月份多选 */
+  $('#mp-prev').addEventListener('click', () => {
+    state.mpYear--;
+    renderMonthPicker();
+  });
+  $('#mp-next').addEventListener('click', () => {
+    state.mpYear++;
+    renderMonthPicker();
+  });
+  $('#mp-clear').addEventListener('click', () => {
+    state.settings.selectedMonths = [];
+    saveSettings();
+    renderMonthPicker();
+    syncPrintControls();
+  });
+  $('#mp-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.mp-month');
+    if (!btn || !btn.dataset.key) return;
+    const key = btn.dataset.key;
+    let arr = state.settings.selectedMonths || [];
+    if (arr.includes(key)) arr = arr.filter((k) => k !== key);
+    else arr = arr.concat(key);
+    state.settings.selectedMonths = arr;
+    saveSettings();
+    renderMonthPicker();
+    syncPrintControls();
+  });
+
   $('#cover-title').addEventListener('change', (e) => {
     state.settings.coverTitle = e.target.value;
     saveSettings();
@@ -1360,6 +1479,7 @@ function init() {
   applyLanguage();
   applySettings();
   syncControlsFromSettings();
+  renderMonthPicker();
   renderThemeGrid();
   renderCats();
   renderCalendar();
